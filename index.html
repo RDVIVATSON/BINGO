@@ -252,11 +252,50 @@
 <div class="bottom-controls">
   <div id="ballCounter">Balls Called: 0</div>
   <button class="reset" onclick="resetBoard()">Reset Board</button>
+  <a href="config.html" class="config-link" title="Settings">⚙️</a>
 </div>
-
 
     </div>
     <script src="script.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+	<script>
+	// Apply saved config on load
+	(function applyConfig() {
+	  let cfg = {};
+	  try { cfg = JSON.parse(localStorage.getItem('bingoConfig')) || {}; } catch {}
+
+	  // Logo
+	  const logoEl = document.querySelector('.static-section img');
+	  if (logoEl) {
+	    if (cfg.showlogo === false) {
+	      logoEl.style.display = 'none';
+	    } else if (cfg.logo) {
+	      logoEl.src = cfg.logo;
+	    }
+	  }
+
+	  // Wildcard toggle default
+	  const wcToggle = document.getElementById('enableWildcard');
+	  if (wcToggle && cfg.wildcard !== undefined) wcToggle.checked = cfg.wildcard;
+
+	  // Ball counter visibility
+	  const counter = document.getElementById('ballCounter');
+	  if (counter && cfg.counter === false) counter.style.display = 'none';
+
+	  // Last ball visibility
+	  const lastBall = document.querySelector('.last-number');
+	  if (lastBall && cfg.lastball === false) lastBall.style.display = 'none';
+
+	  // Pattern dropdown — filter to selected only
+	  if (cfg.patterns && cfg.patterns.length > 0) {
+	    const select = document.getElementById('patterns');
+	    if (select) {
+	      [...select.options].forEach(opt => {
+	        if (!cfg.patterns.includes(opt.value)) opt.remove();
+	      });
+	    }
+	  }
+	})();
+	</script>
 </body>
 </html>

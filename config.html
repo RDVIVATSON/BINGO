@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo Configuration</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 6px;
+    color: #fff;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #aaa;
+    margin-bottom: 30px;
+    font-size: 0.9rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #0f3460;
+  }
+
+  .card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .card h2 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #e94560;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #0f3460;
+  }
+
+  /* Logo upload */
+  .logo-preview {
+    width: 100%;
+    height: 140px;
+    border: 2px dashed #0f3460;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    overflow: hidden;
+    background: #0f3460;
+  }
+
+  .logo-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: none;
+  }
+
+  .logo-preview span {
+    color: #666;
+    font-size: 0.85rem;
+  }
+
+  .file-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: #0f3460;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .file-btn:hover { background: #e94560; }
+
+  .clear-btn {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    color: #aaa;
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .clear-btn:hover { color: #e94560; border-color: #e94560; }
+
+  /* Feature toggles */
+  .feature-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #0f3460;
+  }
+
+  .feature-row:last-child { border-bottom: none; }
+
+  .feature-label { font-size: 0.95rem; }
+  .feature-desc { font-size: 0.75rem; color: #888; margin-top: 2px; }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .toggle-label input { display: none; }
+
+  .toggle-slider {
+    width: 52px;
+    height: 28px;
+    background: #333;
+    border-radius: 28px;
+    position: relative;
+    transition: background 0.3s;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+
+  .toggle-slider::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: left 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+
+  .toggle-label input:checked + .toggle-slider { background: #27ae60; }
+  .toggle-label input:checked + .toggle-slider::after { left: 27px; }
+
+  /* Pattern list */
+  .pattern-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .pattern-toolbar button {
+    padding: 6px 12px;
+    border: 1px solid #0f3460;
+    background: #0f3460;
+    color: #eee;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+
+  .pattern-toolbar button:hover { background: #e94560; border-color: #e94560; }
+
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .pattern-grid::-webkit-scrollbar { width: 6px; }
+  .pattern-grid::-webkit-scrollbar-track { background: #0f3460; border-radius: 3px; }
+  .pattern-grid::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+
+  .pattern-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #0f3460;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+
+  .pattern-item:hover { background: #1a4a8a; }
+  .pattern-item.checked { background: #1a5c2e; }
+
+  .pattern-item input { display: none; }
+
+  .pattern-check {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #555;
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .pattern-item.checked .pattern-check {
+    background: #27ae60;
+    border-color: #27ae60;
+    color: white;
+  }
+
+  .pattern-item.checked .pattern-check::after { content: '✓'; }
+
+  .pattern-name { font-size: 0.82rem; }
+
+  .pattern-layout {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .pattern-preview-panel {
+    position: sticky;
+    top: 20px;
+  }
+
+  .pattern-preview-box {
+    background: #0f3460;
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-height: 200px;
+    justify-content: center;
+  }
+
+  .pattern-preview-box img {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    display: none;
+    border-radius: 6px;
+    background: white;
+    padding: 4px;
+  }
+
+  #patternPreviewLabel {
+    font-size: 0.85rem;
+    color: #888;
+    text-align: center;
+  }
+
+  .pattern-item.previewing {
+    outline: 2px solid #e94560;
+  }
+
+  /* Save button */
+  .save-bar {
+    max-width: 1000px;
+    margin: 20px auto 0;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .save-btn {
+    flex: 1;
+    padding: 14px;
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.2s;
+  }
+
+  .save-btn:hover { background: #c73652; }
+
+  .launch-btn {
+    padding: 14px 24px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+
+  .launch-btn:hover { background: #219150; }
+
+  .save-status {
+    text-align: center;
+    color: #27ae60;
+    font-size: 0.9rem;
+    height: 20px;
+    margin-top: 8px;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+</style>
+</head>
+<body>
+
+<h1>⚙️ Bingo Configuration</h1>
+<p class="subtitle">Settings are saved locally and applied when the board loads.</p>
+
+<div class="grid">
+
+  <!-- Logo -->
+  <div class="card">
+    <h2>Venue Logo</h2>
+    <div class="logo-preview" id="logoPreview">
+      <img id="logoImg" src="" alt="Logo">
+      <span id="logoPlaceholder">No logo uploaded</span>
+    </div>
+    <label class="file-btn" for="logoUpload">📁 Upload Logo</label>
+    <input type="file" id="logoUpload" accept="image/*" style="display:none">
+    <button class="clear-btn" id="clearLogo">Remove Logo</button>
+  </div>
+
+  <!-- Features -->
+  <div class="card">
+    <h2>Features</h2>
+
+    <div class="feature-row">
+      <div>
+        <div class="feature-label">Wildcard</div>
+        <div class="feature-desc">3 numbers ending same digit calls all matching</div>
+      </div>
+      <label class="toggle-label">
+        <input type="checkbox" id="cfg-wildcard" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="feature-row">
+      <div>
+        <div class="feature-label">Ball Counter</div>
+        <div class="feature-desc">Shows how many balls have been called</div>
+      </div>
+      <label class="toggle-label">
+        <input type="checkbox" id="cfg-counter" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="feature-row">
+      <div>
+        <div class="feature-label">Last Ball Display</div>
+        <div class="feature-desc">Shows image of the last ball called</div>
+      </div>
+      <label class="toggle-label">
+        <input type="checkbox" id="cfg-lastball" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="feature-row">
+      <div>
+        <div class="feature-label">Show Logo</div>
+        <div class="feature-desc">Display venue logo in sidebar</div>
+      </div>
+      <label class="toggle-label">
+        <input type="checkbox" id="cfg-showlogo" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+
+  <!-- Patterns -->
+  <div class="card full-width">
+    <h2>Active Patterns</h2>
+    <div class="pattern-toolbar">
+      <button id="selectAll">Select All</button>
+      <button id="selectNone">Select None</button>
+    </div>
+    <div class="pattern-layout">
+      <div class="pattern-grid" id="patternGrid"></div>
+      <div class="pattern-preview-panel">
+        <div class="pattern-preview-box">
+          <img id="patternPreviewImg" src="" alt="">
+          <div id="patternPreviewLabel">Hover a pattern to preview</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="save-bar">
+  <button class="save-btn" id="saveBtn">💾 Save Settings</button>
+  <a class="launch-btn" href="index.html">▶ Launch Board</a>
+</div>
+<div class="save-status" id="saveStatus"></div>
+
+<script>
+const ALL_PATTERNS = [
+  { value: 'regular4c',       label: 'Regular-4C' },
+  { value: 'fourcorners',     label: 'Four Corners' },
+  { value: 'blackout',        label: 'Blackout' },
+  { value: '3vertlines',      label: '3 Vertical Lines' },
+  { value: 'airplane',        label: 'Airplane' },
+  { value: 'alien',           label: 'Alien' },
+  { value: 'ambersand',       label: 'Ambersand' },
+  { value: 'ant',             label: 'Ant' },
+  { value: 'appletree',       label: 'Apple Tree' },
+  { value: 'astrisk',         label: 'Asterisk' },
+  { value: 'bag',             label: 'Bag' },
+  { value: 'barbell',         label: 'Barbell' },
+  { value: 'baseballdiamond', label: 'Baseball Diamond' },
+  { value: 'basket',          label: 'Basket' },
+  { value: 'bib',             label: 'Bib' },
+  { value: 'bird',            label: 'Bird' },
+  { value: 'block6',          label: 'Block of 6' },
+  { value: 'block9',          label: 'Block of 9' },
+  { value: 'bowtie',          label: 'Bowtie' },
+  { value: 'campertrailer',   label: 'Camper Trailer' },
+  { value: 'candlestick',     label: 'Candlestick' },
+  { value: 'candelabra',      label: 'Candelabra' },
+  { value: 'chair',           label: 'Chair' },
+  { value: 'car',             label: 'Car' },
+  { value: 'champaineglass',  label: 'Champagne Glass' },
+  { value: 'checkmark',       label: 'Checkmark' },
+  { value: 'crazyc',          label: 'Crazy C' },
+  { value: 'crazyh',          label: 'Crazy H' },
+  { value: 'crazyt',          label: 'Crazy T' },
+  { value: 'crazyl',          label: 'Crazy L' },
+  { value: 'crown',           label: 'Crown' },
+  { value: 'daisy',           label: 'Daisy' },
+  { value: 'dog',             label: 'Ben the Dog' },
+  { value: 'dollarsign',      label: 'Dollar Sign' },
+  { value: 'doublel',         label: 'Double L' },
+  { value: 'doubleplus',      label: 'Double Plus' },
+  { value: 'duck',            label: 'Duck' },
+  { value: 'eyeball',         label: 'Eye Ball' },
+  { value: 'fishhook',        label: 'Fish Hook' },
+  { value: 'flag',            label: 'Flag' },
+  { value: 'foursquare',      label: 'Four Square' },
+  { value: 'fox',             label: 'Fox' },
+  { value: 'fullmoon',        label: 'Full Moon' },
+  { value: 'giftbag',         label: 'Gift Bag' },
+  { value: 'grapes',          label: 'Grape' },
+  { value: 'halfmoon',        label: 'Half Moon' },
+  { value: 'hat',             label: 'Hat' },
+  { value: 'headstone',       label: 'Headstone' },
+  { value: 'hi',              label: 'Hi' },
+  { value: 'hotcocoa',        label: 'Hot Cocoa' },
+  { value: 'house',           label: 'House' },
+  { value: 'icicles',         label: 'Icicles' },
+  { value: 'ladder',          label: 'Ladder' },
+  { value: 'largediamond',    label: 'Large Diamond' },
+  { value: 'lettera',         label: 'Letter A' },
+  { value: 'letterb',         label: 'Letter B' },
+  { value: 'letterc',         label: 'Letter C' },
+  { value: 'letterd',         label: 'Letter D' },
+  { value: 'lettere',         label: 'Letter E' },
+  { value: 'letterf',         label: 'Letter F' },
+  { value: 'letterg',         label: 'Letter G' },
+  { value: 'letterh',         label: 'Letter H' },
+  { value: 'letteri',         label: 'Letter I' },
+  { value: 'letterj',         label: 'Letter J' },
+  { value: 'letterk',         label: 'Letter K' },
+  { value: 'letterl',         label: 'Letter L' },
+  { value: 'letterm',         label: 'Letter M' },
+  { value: 'lettern',         label: 'Letter N' },
+  { value: 'lettero',         label: 'Letter O' },
+  { value: 'letterp',         label: 'Letter P' },
+  { value: 'letterq',         label: 'Letter Q' },
+  { value: 'letterr',         label: 'Letter R' },
+  { value: 'letters',         label: 'Letter S' },
+  { value: 'lettert',         label: 'Letter T' },
+  { value: 'letteru',         label: 'Letter U' },
+  { value: 'letterv',         label: 'Letter V' },
+  { value: 'letterw',         label: 'Letter W' },
+  { value: 'letterx',         label: 'Letter X' },
+  { value: 'lettery',         label: 'Letter Y' },
+  { value: 'letterz',         label: 'Letter Z' },
+  { value: 'light',           label: 'Light' },
+  { value: 'lobster',         label: 'Lobster' },
+  { value: 'loveletter',      label: 'Love Letter' },
+  { value: 'mapleleaf',       label: 'Maple Leaf' },
+  { value: 'motorcycle',      label: 'Motorcycle' },
+  { value: 'mask',            label: 'Mask' },
+  { value: 'mushroom',        label: 'Mushroom' },
+  { value: 'musicnote',       label: 'Music Note' },
+  { value: 'number0',         label: 'Number 0' },
+  { value: 'number1',         label: 'Number 1' },
+  { value: 'number2',         label: 'Number 2' },
+  { value: 'number3',         label: 'Number 3' },
+  { value: 'number4',         label: 'Number 4' },
+  { value: 'number5',         label: 'Number 5' },
+  { value: 'number6',         label: 'Number 6' },
+  { value: 'number7',         label: 'Number 7' },
+  { value: 'number8',         label: 'Number 8' },
+  { value: 'number9',         label: 'Number 9' },
+  { value: 'number10',        label: 'Number 10' },
+  { value: 'number11',        label: 'Number 11' },
+  { value: 'number12',        label: 'Number 12' },
+  { value: 'number13',        label: 'Number 13' },
+  { value: 'number14',        label: 'Number 14' },
+  { value: 'number15',        label: 'Number 15' },
+  { value: 'number16',        label: 'Number 16' },
+  { value: 'number17',        label: 'Number 17' },
+  { value: 'number18',        label: 'Number 18' },
+  { value: 'number19',        label: 'Number 19' },
+  { value: 'owl',             label: 'Owl' },
+  { value: 'paraderoute',     label: 'Parade Route' },
+  { value: 'pin',             label: 'Pin' },
+  { value: 'pinwheel',        label: 'Pinwheel' },
+  { value: 'rainboat',        label: 'Rain Boat' },
+  { value: 'raindrop',        label: 'Rain Drop' },
+  { value: 'rake',            label: 'Rake' },
+  { value: 'rectangle',       label: 'Rectangle' },
+  { value: 'sailboat',        label: 'Sailboat' },
+  { value: 'shorts',          label: 'Shorts' },
+  { value: 'shark',           label: 'Shark' },
+  { value: 'sign',            label: 'Sign' },
+  { value: 'skiis',           label: 'Skiis' },
+  { value: 'skull',           label: 'Skull' },
+  { value: 'smallc',          label: 'Small C' },
+  { value: 'smalldiamond',    label: 'Small Diamond' },
+  { value: 'smalle',          label: 'Small E' },
+  { value: 'snorkel',         label: 'Snorkel' },
+  { value: 'snowmobile',      label: 'Snowmobile' },
+  { value: 'spiderweb',       label: 'Spider Web' },
+  { value: 'sweater',         label: 'Sweater' },
+  { value: 'table',           label: 'Table' },
+  { value: 'thunderbird',     label: 'Thunderbird' },
+  { value: 'tictactoe',       label: 'Tic Tac Toe' },
+  { value: 'topv',            label: 'Top V' },
+  { value: 'torch',           label: 'Torch' },
+  { value: 'tornado',         label: 'Tornado' },
+  { value: 'train',           label: 'Train' },
+  { value: 'trophy',          label: 'Trophy' },
+  { value: 'tulip',           label: 'Tulip' },
+  { value: 'umbrella',        label: 'Umbrella' },
+  { value: 'upsidedownt',     label: 'Upsidedown T' },
+  { value: 'vampire',         label: 'Vampire' },
+  { value: 'wasp',            label: 'Wasp' },
+  { value: 'windmill',        label: 'Windmill' },
+  { value: 'windowpane',      label: 'Window Pane' },
+  { value: 'windowshade',     label: 'Window Shade' },
+  { value: 'wineglass',       label: 'Wine Glass' },
+  { value: 'worm',            label: 'Worm' },
+  { value: 'christmaslight',  label: 'Christmas Light' },
+  { value: 'christmastree',   label: 'Christmas Tree' },
+  { value: 'cross',           label: 'Cross' },
+  { value: 'fireplace',       label: 'Fireplace' },
+  { value: 'gift',            label: 'Gift' },
+  { value: 'reindeer',        label: 'Reindeer' },
+  { value: 'snowflake',       label: 'Snowflake' },
+  { value: 'tinsel',          label: 'Tinsel' },
+  { value: 'wreath',          label: 'Wreath' },
+];
+
+// ── Load saved settings ───────────────────────────────────────────────────
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem('bingoConfig')) || {}; } catch { return {}; }
+}
+
+const saved = loadSettings();
+const savedPatterns = saved.patterns || ALL_PATTERNS.map(p => p.value);
+
+// ── Logo ──────────────────────────────────────────────────────────────────
+const logoImg         = document.getElementById('logoImg');
+const logoPlaceholder = document.getElementById('logoPlaceholder');
+const logoUpload      = document.getElementById('logoUpload');
+
+function showLogo(src) {
+  if (src) {
+    logoImg.src = src;
+    logoImg.style.display = 'block';
+    logoPlaceholder.style.display = 'none';
+  } else {
+    logoImg.src = '';
+    logoImg.style.display = 'none';
+    logoPlaceholder.style.display = 'block';
+  }
+}
+
+if (saved.logo) showLogo(saved.logo);
+
+logoUpload.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => showLogo(ev.target.result);
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('clearLogo').addEventListener('click', () => {
+  logoUpload.value = '';
+  showLogo(null);
+});
+
+// ── Feature toggles ───────────────────────────────────────────────────────
+document.getElementById('cfg-wildcard').checked  = saved.wildcard  !== false;
+document.getElementById('cfg-counter').checked   = saved.counter   !== false;
+document.getElementById('cfg-lastball').checked  = saved.lastball  !== false;
+document.getElementById('cfg-showlogo').checked  = saved.showlogo  !== false;
+
+// ── Pattern grid ──────────────────────────────────────────────────────────
+const grid = document.getElementById('patternGrid');
+
+ALL_PATTERNS.forEach(p => {
+  const isChecked = savedPatterns.includes(p.value);
+  const item = document.createElement('div');
+  item.className = 'pattern-item' + (isChecked ? ' checked' : '');
+  item.dataset.value = p.value;
+  item.innerHTML = `<span class="pattern-check"></span><span class="pattern-name">${p.label}</span>`;
+
+  // Toggle checked on click
+  item.addEventListener('click', () => item.classList.toggle('checked'));
+
+  // Preview on hover
+  item.addEventListener('mouseenter', () => {
+    const img   = document.getElementById('patternPreviewImg');
+    const label = document.getElementById('patternPreviewLabel');
+    document.querySelectorAll('.pattern-item.previewing').forEach(i => i.classList.remove('previewing'));
+    item.classList.add('previewing');
+    img.src = `images/${p.value}.gif`;
+    img.style.display = 'block';
+    img.onerror = () => { img.style.display = 'none'; };
+    img.onload  = () => { img.style.display = 'block'; };
+    label.textContent = p.label;
+  });
+
+  grid.appendChild(item);
+});
+
+document.getElementById('selectAll').addEventListener('click', () =>
+  grid.querySelectorAll('.pattern-item').forEach(i => i.classList.add('checked')));
+
+document.getElementById('selectNone').addEventListener('click', () =>
+  grid.querySelectorAll('.pattern-item').forEach(i => i.classList.remove('checked')));
+
+// ── Save ──────────────────────────────────────────────────────────────────
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const checkedPatterns = [...grid.querySelectorAll('.pattern-item.checked')]
+    .map(i => i.dataset.value);
+
+  if (checkedPatterns.length === 0) {
+    alert('Please select at least one pattern.');
+    return;
+  }
+
+  const config = {
+    logo:     logoImg.src && logoImg.style.display !== 'none' ? logoImg.src : null,
+    wildcard: document.getElementById('cfg-wildcard').checked,
+    counter:  document.getElementById('cfg-counter').checked,
+    lastball: document.getElementById('cfg-lastball').checked,
+    showlogo: document.getElementById('cfg-showlogo').checked,
+    patterns: checkedPatterns,
+  };
+
+  localStorage.setItem('bingoConfig', JSON.stringify(config));
+
+  const status = document.getElementById('saveStatus');
+  status.textContent = '✅ Settings saved!';
+  setTimeout(() => status.textContent = '', 3000);
+});
+</script>
+</body>
+</html>

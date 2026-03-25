@@ -271,6 +271,16 @@ body {
     font-weight: bold;
 }
 
+.config-link {
+    font-size: clamp(14px, 1.4vw, 20px);
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.config-link:hover { opacity: 1; }
+
 /* Flashing Effect */
 .flashing {
     animation: flash 0.5s infinite alternate;
