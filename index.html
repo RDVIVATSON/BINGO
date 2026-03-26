@@ -40,8 +40,10 @@
 </div>
         <div class="sidebar">
     <div class="pattern-display">
-        <label for="patterns">Bingo Pattern:</label>
-        <select id="patterns" onchange="displayPattern()">
+        <div class="pattern-top-row">
+            <div class="pattern-select-wrap">
+                <label for="patterns">Bingo Pattern:</label>
+                <select id="patterns" onchange="displayPattern()">
 			<option value="regular4c">Regular-4C</option>
             <option value="fourcorners">Four Corners</option>
             <option value="blackout">Blackout</option>   
@@ -190,7 +192,7 @@
 			<option value="windowshade">Window Shade</option>
 			<option value="wineglass">Wine Glass</option>
 			<option value="worm">Worm</option>
-			<option value="candelabra">Cadelabra</option>
+			<!--<option value="candelabra">Cadelabra</option>
 			<option value="frankenstien">Frankenstien</option>
 			<option value="mask">Mask</option>
 			<option value="pitchfork">Pitchfork</option>
@@ -199,7 +201,7 @@
 			<option value="thirtyone">31</option>
 			<option value="witchbroom">Witch Broom</option>
 			<option value="witchhat">Witch Hat</option>
-			<option value="witchinghour">Witching Hour</option>
+			<option value="witchinghour">Witching Hour</option>-->
 			<option value="christmaslight">Christmas Light</option>
 			<option value="christmastree">Christmas Tree</option>
 			<option value="cross">Cross</option>
@@ -210,7 +212,16 @@
 			<option value="tinsel">Tinsel</option>
 			<option value="wreath">Wreath</option>
 			</select>
-			<div id="pattern-display" class="pattern-box">
+            </div>
+            <div class="wildcard-toggle">
+              <label class="toggle-label">
+                <input type="checkbox" id="enableWildcard" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-text">Wildcard</span>
+              </label>
+            </div>
+        </div>
+		<div id="pattern-display" class="pattern-box">
             <img id="pattern-image" src="images/regular4c.gif" alt="Bingo Pattern">
         </div>
     </div>
@@ -231,27 +242,26 @@
 </div>
 -->
 
-<div class="wildcard-toggle">
-  <label class="toggle-label">
-    <input type="checkbox" id="enableWildcard" checked>
-    <span class="toggle-slider"></span>
-    <span class="toggle-text">Wildcard</span>
-  </label>
-</div>
-
-<div class="static-section">
-  <img src="images/YBLOGO.jpg" alt="Yella Beak Logo" class="beer-image">
+<<div class="static-section">
+  <img id="venueLogo" class="beer-image" src="" alt="BINGO NIGHT">
 </div>
 
 
 <div class="last-number">
   <p>Last Ball Called:</p>
   <img id="lastBallImage" src="" alt="" style="display:none;">
+  <p id="lastBallFallback" style="display:none; font-size:clamp(16px,2.5vw,32px); font-weight:bold;"></p>
+</div>
+
+<div class="ball-history">
+  <p class="ball-history-title">Call History</p>
+  <div id="ballHistory"></div>
 </div>
 
 <div class="bottom-controls">
   <div id="ballCounter">Balls Called: 0</div>
   <button class="reset" onclick="resetBoard()">Reset Board</button>
+  <a href="display.html" target="_blank" class="config-link" title="TV Display">📺</a>
   <a href="config.html" class="config-link" title="Settings">⚙️</a>
 </div>
 
@@ -259,43 +269,55 @@
     <script src="script.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 	<script>
-	// Apply saved config on load
-	(function applyConfig() {
-	  let cfg = {};
-	  try { cfg = JSON.parse(localStorage.getItem('bingoConfig')) || {}; } catch {}
+(function applyConfig() {
+  let cfg = {};
+  try { cfg = JSON.parse(localStorage.getItem('bingoConfig')) || {}; } catch {}
 
-	  // Logo
-	  const logoEl = document.querySelector('.static-section img');
-	  if (logoEl) {
-	    if (cfg.showlogo === false) {
-	      logoEl.style.display = 'none';
-	    } else if (cfg.logo) {
-	      logoEl.src = cfg.logo;
-	    }
-	  }
+  // Logo
+  const logoEl = document.getElementById('venueLogo');
+  if (logoEl) {
+    if (cfg.showlogo === false) {
+      logoEl.closest('.static-section').style.display = 'none';
+    } else if (cfg.logo) {
+      logoEl.src = cfg.logo;
+    } else {
+      const svg = `<svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+        <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+        <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+        <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+      </svg>`;
+      logoEl.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+  }
 
-	  // Wildcard toggle default
-	  const wcToggle = document.getElementById('enableWildcard');
-	  if (wcToggle && cfg.wildcard !== undefined) wcToggle.checked = cfg.wildcard;
+  // Wildcard — hide the entire toggle if disabled
+  const wcToggle = document.getElementById('enableWildcard');
+  const wcWrap = document.querySelector('.wildcard-toggle');
+  if (cfg.wildcard === false) {
+    if (wcWrap) wcWrap.style.display = 'none';
+    if (wcToggle) wcToggle.checked = false;
+  } else {
+    if (wcToggle) wcToggle.checked = true;
+  }
 
-	  // Ball counter visibility
-	  const counter = document.getElementById('ballCounter');
-	  if (counter && cfg.counter === false) counter.style.display = 'none';
+  // Ball counter
+  const counter = document.getElementById('ballCounter');
+  if (counter && cfg.counter === false) counter.style.display = 'none';
 
-	  // Last ball visibility
-	  const lastBall = document.querySelector('.last-number');
-	  if (lastBall && cfg.lastball === false) lastBall.style.display = 'none';
+  // Last ball display
+  const lastBall = document.querySelector('.last-number');
+  if (lastBall && cfg.lastball === false) lastBall.style.display = 'none';
 
-	  // Pattern dropdown — filter to selected only
-	  if (cfg.patterns && cfg.patterns.length > 0) {
-	    const select = document.getElementById('patterns');
-	    if (select) {
-	      [...select.options].forEach(opt => {
-	        if (!cfg.patterns.includes(opt.value)) opt.remove();
-	      });
-	    }
-	  }
-	})();
-	</script>
+  // Pattern dropdown — filter to selected only
+  if (cfg.patterns && cfg.patterns.length > 0) {
+    const select = document.getElementById('patterns');
+    if (select) {
+      [...select.options].forEach(opt => {
+        if (!cfg.patterns.includes(opt.value)) opt.remove();
+      });
+    }
+  }
+})();
+</script>
 </body>
 </html>

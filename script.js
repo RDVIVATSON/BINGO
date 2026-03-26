@@ -176,23 +176,72 @@ function resetBoard() {
 }
 
 function updateLastNumber() {
-    const ballImage = document.getElementById('lastBallImage');
+    const ballImage    = document.getElementById('lastBallImage');
+    const ballFallback = document.getElementById('lastBallFallback');
+
+    // Always clear handlers and reset both elements first
+    ballImage.onload  = null;
+    ballImage.onerror = null;
+    ballImage.src     = '';
+    ballImage.style.display    = 'none';
+    ballFallback.textContent   = '';
+    ballFallback.style.display = 'none';
+
     const last = calledNumbers[calledNumbers.length - 1];
     if (last) {
-        ballImage.src = `images/balls/${last.column}${last.number}.png`;
-        ballImage.alt = last.column + last.number;
-        ballImage.style.display = 'block';
-    } else {
-        ballImage.src = '';
-        ballImage.alt = '';
-        ballImage.style.display = 'none';
+        const name = last.column + last.number;
+        ballImage.alt = name;
+        ballImage.onload = () => {
+            ballImage.style.display = 'block';
+            ballFallback.style.display = 'none';
+        };
+        ballImage.onerror = () => {
+            ballImage.style.display = 'none';
+            ballFallback.textContent = name;
+            ballFallback.style.display = 'block';
+        };
+        ballImage.src = `images/balls/${name}.png`;
     }
+
+    updateBallHistory();
+}
+
+function updateBallHistory() {
+    const container = document.getElementById('ballHistory');
+    if (!container) return;
+    container.innerHTML = '';
+    // Show in reverse order — most recent first
+    [...calledNumbers].reverse().forEach(({ column, number }) => {
+        const span = document.createElement('span');
+        span.className = `history-ball col-${column}`;
+        span.textContent = column + number;
+        container.appendChild(span);
+    });
 }
 
 function updateBallCounter() {
-    const counterDiv = document.getElementById('ballCounter');
-    const count = calledNumbers.length;
-    counterDiv.textContent = `Balls Called: ${count}`;
+    try {
+        const counterDiv = document.getElementById('ballCounter');
+        const count = calledNumbers.length;
+        if (counterDiv) counterDiv.textContent = `Balls Called: ${count}`;
+    } catch(e) {}
+
+    // Always sync state to localStorage for display page
+    try {
+        const state = {
+            calledNumbers: calledNumbers.map(n => ({ column: n.column, number: n.number })),
+            lastCalled: calledNumbers.length > 0
+                ? { column: calledNumbers[calledNumbers.length - 1].column, number: calledNumbers[calledNumbers.length - 1].number }
+                : null,
+            pattern: document.getElementById('patterns')
+                ? document.getElementById('patterns').value
+                : '',
+            timestamp: Date.now()
+        };
+        localStorage.setItem('bingoState', JSON.stringify(state));
+    } catch(e) {
+        console.error('State sync failed:', e);
+    }
 }
 
 // Initialize the board

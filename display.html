@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BINGO Display</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0d0d1a;
+    font-family: Arial, sans-serif;
+    color: #fff;
+  }
+
+  .display-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: 1fr;
+    width: 100vw;
+    height: 100vh;
+    gap: 0;
+  }
+
+  /* ── Left: called number board ── */
+  .number-board {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 8px;
+    height: 100%;
+  }
+
+  .board-title {
+    text-align: center;
+    font-size: clamp(14px, 2vw, 28px);
+    font-weight: bold;
+    letter-spacing: 4px;
+    color: #aaa;
+    flex-shrink: 0;
+  }
+
+  .board-columns {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .board-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .board-col-header {
+    font-size: clamp(20px, 3.5vw, 52px);
+    font-weight: 900;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1.2;
+  }
+
+  .col-B .board-col-header { color: #42A5F5; }
+  .col-I .board-col-header { color: #EF5350; }
+  .col-N .board-col-header { color: #E0E0E0; }
+  .col-G .board-col-header { color: #66BB6A; }
+  .col-O .board-col-header { color: #FFA726; }
+
+  .board-numbers {
+    display: grid;
+    grid-template-rows: repeat(15, 1fr);
+    gap: 4px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .board-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: clamp(10px, 1.6vw, 24px);
+    font-weight: bold;
+    background: #1a1a2e;
+    color: #333;
+    transition: background 0.3s, color 0.3s;
+    border: 1px solid #222;
+  }
+
+  .board-number.called {
+    color: #fff;
+  }
+
+  .board-number.last-called {
+    animation: pulse-cell 1s infinite alternate;
+  }
+
+  .col-B .board-number.called { background: #1565C0; color: #fff; }
+  .col-I .board-number.called { background: #C62828; color: #fff; }
+  .col-N .board-number.called { background: #616161; color: #fff; }
+  .col-G .board-number.called { background: #2E7D32; color: #fff; }
+  .col-O .board-number.called { background: #E65100; color: #fff; }
+
+  .col-B .board-number.last-called { background: #42A5F5; }
+  .col-I .board-number.last-called { background: #EF5350; }
+  .col-N .board-number.last-called { background: #9E9E9E; }
+  .col-G .board-number.last-called { background: #66BB6A; }
+  .col-O .board-number.last-called { background: #FFA726; color: #111; }
+
+  @keyframes pulse-cell {
+    0%   { transform: scale(1);    opacity: 1; }
+    100% { transform: scale(1.08); opacity: 0.85; }
+  }
+
+  /* ── Right: sidebar ── */
+  .display-sidebar {
+    background: #12122a;
+    border-left: 2px solid #1e1e3a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 12px;
+    height: 100%;
+    gap: 10px;
+  }
+
+  /* Pattern */
+  .display-pattern {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .display-pattern-label {
+    font-size: clamp(10px, 1.2vw, 16px);
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .display-pattern-box {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 28vh;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #1e1e3a;
+  }
+
+  .display-pattern-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Last ball */
+  .display-last-ball {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .display-last-label {
+    font-size: clamp(10px, 1.2vw, 16px);
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  #displayBallImage {
+    width: min(220px, 18vw);
+    height: min(220px, 18vw);
+    object-fit: contain;
+    display: none;
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.8));
+  }
+
+  #displayBallFallback {
+    font-size: clamp(32px, 6vw, 80px);
+    font-weight: 900;
+    display: none;
+  }
+
+  /* Venue logo in sidebar */
+  .display-venue-logo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+    padding: 8px 0;
+  }
+
+  #displayLogoImg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  #displayLogoSvg {
+    width: 100%;
+  }
+
+  /* Ball count */
+  .display-count {
+    font-size: clamp(12px, 1.5vw, 20px);
+    color: #888;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .display-count span {
+    color: #fff;
+    font-weight: bold;
+    font-size: clamp(16px, 2vw, 28px);
+  }
+
+  /* Fullscreen button */
+  #fsBtn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.4);
+    color: #fff;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, opacity 0.2s;
+    opacity: 0.8;
+  }
+  #fsBtn:hover { background: rgba(255,255,255,0.35); opacity: 1; }
+
+  /* No state message */
+  .no-state {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    background: inherit;
+    z-index: 10;
+  }
+
+  .no-state p  { font-size: clamp(12px, 1.5vw, 20px); color: #555; letter-spacing: 3px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<button id="fsBtn" title="Enter Fullscreen">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="15 3 21 3 21 9"></polyline>
+    <polyline points="9 21 3 21 3 15"></polyline>
+    <line x1="21" y1="3" x2="14" y2="10"></line>
+    <line x1="3" y1="21" x2="10" y2="14"></line>
+  </svg>
+</button>
+
+<div class="display-grid" id="displayGrid" style="display:none;">
+
+  <!-- Left: number board -->
+  <div class="number-board">
+    <div class="board-title">CALLED NUMBERS</div>
+    <div class="board-columns" id="boardColumns"></div>
+  </div>
+
+  <!-- Right: sidebar -->
+  <div class="display-sidebar">
+
+    <div class="display-pattern">
+      <div class="display-pattern-label">Current Pattern</div>
+      <div class="display-pattern-box">
+        <img id="displayPatternImage" src="" alt="Pattern">
+      </div>
+    </div>
+
+    <div class="display-venue-logo" id="displayVenueLogo">
+      <img id="displayLogoImg" src="" alt="Venue Logo" style="display:none;">
+      <svg id="displayLogoSvg" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+        <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+        <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+      </svg>
+    </div>
+
+    <div class="display-last-ball">
+      <div class="display-last-label">Last Ball Called</div>
+      <img id="displayBallImage" src="" alt="">
+      <div id="displayBallFallback"></div>
+    </div>
+
+    <div class="display-count">
+      Balls Called<br>
+      <span id="displayCount">0</span>
+    </div>
+
+  </div>
+</div>
+
+<div class="no-state" id="noState" style="display:none;">
+  <img id="noStateLogoImg" src="" alt="Venue Logo" style="display:none; max-width:50vw; max-height:35vh; object-fit:contain;">
+  <svg id="noStateLogoSvg" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" style="width:min(500px,60vw);">
+    <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+    <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+    <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+  </svg>
+  <p style="color:#555; font-size:clamp(12px,1.5vw,20px); letter-spacing:3px; text-transform:uppercase;">Waiting for game to start...</p>
+</div>
+
+<script>
+const THEMES = {
+  dark: {
+    pageBg:       '#0d0d1a',
+    sidebarBg:    '#12122a',
+    sidebarBorder:'#1e1e3a',
+    titleColor:   '#aaa',
+    labelColor:   '#888',
+    countColor:   '#fff',
+    fallbackColor:'#fff',
+    cellBg:       '#1a1a2e',
+    cellColor:    '#333',
+    headerB:      '#42A5F5',
+    headerI:      '#EF5350',
+    headerN:      '#E0E0E0',
+    headerG:      '#66BB6A',
+    headerO:      '#FFA726',
+    calledB:      '#1565C0', calledBText: '#fff',
+    calledI:      '#C62828', calledIText: '#fff',
+    calledN:      '#616161', calledNText: '#fff',
+    calledG:      '#2E7D32', calledGText: '#fff',
+    calledO:      '#E65100', calledOText: '#fff',
+    lastB:        '#42A5F5', lastBText:   '#fff',
+    lastI:        '#EF5350', lastIText:   '#fff',
+    lastN:        '#9E9E9E', lastNText:   '#fff',
+    lastG:        '#66BB6A', lastGText:   '#fff',
+    lastO:        '#FFA726', lastOText:   '#111',
+  },
+  light: {
+    pageBg:       '#f0f0f0',
+    sidebarBg:    '#fff',
+    sidebarBorder:'#ddd',
+    titleColor:   '#555',
+    labelColor:   '#888',
+    countColor:   '#111',
+    fallbackColor:'#111',
+    cellBg:       '#fff',
+    cellColor:    '#bbb',
+    headerB:      '#1565C0',
+    headerI:      '#C62828',
+    headerN:      '#888',
+    headerG:      '#2E7D32',
+    headerO:      '#E65100',
+    calledB:      '#1565C0', calledBText: '#fff',
+    calledI:      '#C62828', calledIText: '#fff',
+    calledN:      '#757575', calledNText: '#fff',
+    calledG:      '#2E7D32', calledGText: '#fff',
+    calledO:      '#E65100', calledOText: '#fff',
+    lastB:        '#42A5F5', lastBText:   '#fff',
+    lastI:        '#EF5350', lastIText:   '#fff',
+    lastN:        '#9E9E9E', lastNText:   '#fff',
+    lastG:        '#66BB6A', lastGText:   '#fff',
+    lastO:        '#FFA726', lastOText:   '#111',
+  },
+  blackboard: {
+    pageBg:       '#1a3a2a',
+    sidebarBg:    '#162e20',
+    sidebarBorder:'#2a5a3a',
+    titleColor:   '#a5d6a7',
+    labelColor:   '#a5d6a7',
+    countColor:   '#fff',
+    fallbackColor:'#fff',
+    cellBg:       '#1f4a30',
+    cellColor:    '#4a7a5a',
+    headerB:      '#80CBC4',
+    headerI:      '#EF9A9A',
+    headerN:      '#E0E0E0',
+    headerG:      '#A5D6A7',
+    headerO:      '#FFCC80',
+    calledB:      '#00897B', calledBText: '#fff',
+    calledI:      '#E53935', calledIText: '#fff',
+    calledN:      '#9E9E9E', calledNText: '#fff',
+    calledG:      '#43A047', calledGText: '#fff',
+    calledO:      '#FB8C00', calledOText: '#fff',
+    lastB:        '#80CBC4', lastBText:   '#111',
+    lastI:        '#EF9A9A', lastIText:   '#111',
+    lastN:        '#E0E0E0', lastNText:   '#111',
+    lastG:        '#A5D6A7', lastGText:   '#111',
+    lastO:        '#FFCC80', lastOText:   '#111',
+  },
+  highcontrast: {
+    pageBg:       '#000',
+    sidebarBg:    '#000',
+    sidebarBorder:'#333',
+    titleColor:   '#fff',
+    labelColor:   '#aaa',
+    countColor:   '#fff',
+    fallbackColor:'#fff',
+    cellBg:       '#111',
+    cellColor:    '#555',
+    headerB:      '#00BFFF',
+    headerI:      '#FF4444',
+    headerN:      '#fff',
+    headerG:      '#00FF7F',
+    headerO:      '#FFD700',
+    calledB:      '#00BFFF', calledBText: '#000',
+    calledI:      '#FF4444', calledIText: '#fff',
+    calledN:      '#fff',    calledNText: '#000',
+    calledG:      '#00FF7F', calledGText: '#000',
+    calledO:      '#FFD700', calledOText: '#000',
+    lastB:        '#00BFFF', lastBText:   '#000',
+    lastI:        '#FF4444', lastIText:   '#fff',
+    lastN:        '#fff',    lastNText:   '#000',
+    lastG:        '#00FF7F', lastGText:   '#000',
+    lastO:        '#FFD700', lastOText:   '#000',
+  },
+};
+
+function applyTheme(themeName) {
+  const t = THEMES[themeName] || THEMES.dark;
+
+  document.body.style.background = t.pageBg;
+  document.querySelector('.display-sidebar').style.background  = t.sidebarBg;
+  document.querySelector('.display-sidebar').style.borderColor = t.sidebarBorder;
+  document.querySelector('.board-title').style.color           = t.titleColor;
+
+  // Labels
+  document.querySelectorAll('.display-pattern-label, .display-last-label, .display-count').forEach(el => {
+    el.style.color = t.labelColor;
+  });
+
+  // Count number
+  document.getElementById('displayCount').style.color = t.countColor;
+
+  // Fallback ball text
+  document.getElementById('displayBallFallback').style.color = t.fallbackColor;
+
+  // Column headers
+  const cols = ['B','I','N','G','O'];
+  cols.forEach(col => {
+    const header = document.querySelector(`.col-${col} .board-col-header`);
+    if (header) header.style.color = t[`header${col}`];
+  });
+
+  // Store theme for use in applyState
+  window._theme = t;
+}
+
+const COLUMNS = ['B','I','N','G','O'];
+const RANGES  = { B:[1,15], I:[16,30], N:[31,45], G:[46,60], O:[61,75] };
+
+// Build the number board DOM once
+function buildBoard() {
+  const container = document.getElementById('boardColumns');
+  COLUMNS.forEach(col => {
+    const colDiv = document.createElement('div');
+    colDiv.className = `board-col col-${col}`;
+
+    const header = document.createElement('div');
+    header.className = 'board-col-header';
+    header.textContent = col;
+    colDiv.appendChild(header);
+
+    const nums = document.createElement('div');
+    nums.className = 'board-numbers';
+
+    const [start, end] = RANGES[col];
+    for (let n = start; n <= end; n++) {
+      const cell = document.createElement('div');
+      cell.className = 'board-number';
+      cell.id = `dn-${col}${n}`;
+      cell.textContent = n;
+      nums.appendChild(cell);
+    }
+    colDiv.appendChild(nums);
+    container.appendChild(colDiv);
+  });
+}
+
+// Apply state from localStorage
+function applyState(state) {
+  const t = window._theme || THEMES.dark;
+
+  // Clear all cells
+  document.querySelectorAll('.board-number').forEach(el => {
+    el.classList.remove('called', 'last-called');
+    el.style.background = t.cellBg;
+    el.style.color      = t.cellColor;
+  });
+
+  if (!state || !state.calledNumbers || state.calledNumbers.length === 0) {
+    document.getElementById('displayGrid').style.display = 'none';
+    document.getElementById('noState').style.display = 'flex';
+    document.getElementById('displayCount').textContent = '0';
+    return;
+  }
+
+  document.getElementById('displayGrid').style.display = 'grid';
+  document.getElementById('noState').style.display = 'none';
+
+  // Mark called numbers
+  state.calledNumbers.forEach(({ column, number }) => {
+    const cell = document.getElementById(`dn-${column}${number}`);
+    if (cell) {
+      cell.classList.add('called');
+      cell.style.background = t[`called${column}`];
+      cell.style.color      = t[`called${column}Text`];
+    }
+  });
+
+  // Highlight last called
+  if (state.lastCalled) {
+    const { column, number } = state.lastCalled;
+    const lastCell = document.getElementById(`dn-${column}${number}`);
+    if (lastCell) lastCell.classList.add('last-called');
+
+    // Ball image
+    const ballImg = document.getElementById('displayBallImage');
+    const ballFallback = document.getElementById('displayBallFallback');
+    const name = column + number;
+    ballImg.src = `images/balls/${name}.png`;
+    ballImg.style.display = 'block';
+    ballFallback.style.display = 'none';
+    ballImg.onerror = () => {
+      ballImg.style.display = 'none';
+      ballFallback.textContent = name;
+      ballFallback.style.display = 'block';
+    };
+    ballImg.onload = () => {
+      ballImg.style.display = 'block';
+      ballFallback.style.display = 'none';
+    };
+  }
+
+  // Pattern
+  if (state.pattern) {
+    const patImg = document.getElementById('displayPatternImage');
+    patImg.src = `images/${state.pattern}.gif`;
+  }
+
+  // Count
+  document.getElementById('displayCount').textContent = state.calledNumbers.length;
+}
+
+// Poll localStorage every second
+let lastTheme = null;
+let lastLogo  = null;
+function poll() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
+
+    // Apply theme if changed
+    const themeName = cfg.displayTheme || 'dark';
+    if (themeName !== lastTheme) {
+      lastTheme = themeName;
+      applyTheme(themeName);
+    }
+
+    // Apply logo if changed
+    const logoSrc = cfg.logo || null;
+    if (logoSrc !== lastLogo) {
+      lastLogo = logoSrc;
+      const logoImg     = document.getElementById('displayLogoImg');
+      const logoSvg     = document.getElementById('displayLogoSvg');
+      const nsLogoImg   = document.getElementById('noStateLogoImg');
+      const nsLogoSvg   = document.getElementById('noStateLogoSvg');
+      if (logoSrc) {
+        logoImg.src   = logoSrc;
+        nsLogoImg.src = logoSrc;
+        logoImg.style.display   = 'block';
+        nsLogoImg.style.display = 'block';
+        logoSvg.style.display   = 'none';
+        nsLogoSvg.style.display = 'none';
+      } else {
+        logoImg.style.display   = 'none';
+        nsLogoImg.style.display = 'none';
+        logoSvg.style.display   = 'block';
+        nsLogoSvg.style.display = 'block';
+      }
+    }
+
+    const raw   = localStorage.getItem('bingoState');
+    const state = raw ? JSON.parse(raw) : null;
+    applyState(state);
+  } catch(e) {
+    console.error('Display error:', e);
+  }
+}
+
+// Fullscreen button
+(function() {
+  const btn = document.getElementById('fsBtn');
+
+  btn.addEventListener('click', () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    btn.style.display = document.fullscreenElement ? 'none' : 'flex';
+  });
+  document.addEventListener('webkitfullscreenchange', () => {
+    btn.style.display = document.webkitFullscreenElement ? 'none' : 'flex';
+  });
+})();
+
+buildBoard();
+poll();
+setInterval(poll, 1000);
+</script>
+</body>
+</html>

@@ -281,6 +281,50 @@
     outline: 2px solid #e94560;
   }
 
+  /* Theme selector */
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .theme-option {
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+
+  .theme-option.selected { border-color: #e94560; }
+  .theme-option:hover { border-color: #555; }
+
+  .theme-preview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 8px;
+    height: 70px;
+  }
+
+  .tp-cell {
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .tp-cell.called { }
+
+  .theme-name {
+    text-align: center;
+    font-size: 0.8rem;
+    padding: 6px;
+    background: #0f3460;
+    font-weight: bold;
+  }
+
   /* Save button */
   .save-bar {
     max-width: 1000px;
@@ -399,6 +443,62 @@
         <input type="checkbox" id="cfg-showlogo" checked>
         <span class="toggle-slider"></span>
       </label>
+    </div>
+  </div>
+
+  <!-- Display Theme -->
+  <div class="card">
+    <h2>TV Display Theme</h2>
+    <div class="theme-grid" id="themeGrid">
+
+      <div class="theme-option" data-theme="dark">
+        <div class="theme-preview" style="background:#0d0d1a;">
+          <div class="tp-cell called" style="background:#1565C0;"></div>
+          <div class="tp-cell called" style="background:#C62828;"></div>
+          <div class="tp-cell" style="background:#1a1a2e; color:#333;">·</div>
+          <div class="tp-cell called" style="background:#2E7D32;"></div>
+          <div class="tp-cell" style="background:#1a1a2e; color:#333;">·</div>
+          <div class="tp-cell" style="background:#1a1a2e; color:#333;">·</div>
+        </div>
+        <div class="theme-name">Dark</div>
+      </div>
+
+      <div class="theme-option" data-theme="light">
+        <div class="theme-preview" style="background:#f0f0f0;">
+          <div class="tp-cell called" style="background:#1565C0; color:#fff;"></div>
+          <div class="tp-cell called" style="background:#C62828; color:#fff;"></div>
+          <div class="tp-cell" style="background:#fff; color:#999; border:1px solid #ddd;">·</div>
+          <div class="tp-cell called" style="background:#2E7D32; color:#fff;"></div>
+          <div class="tp-cell" style="background:#fff; color:#999; border:1px solid #ddd;">·</div>
+          <div class="tp-cell" style="background:#fff; color:#999; border:1px solid #ddd;">·</div>
+        </div>
+        <div class="theme-name">Light</div>
+      </div>
+
+      <div class="theme-option" data-theme="blackboard">
+        <div class="theme-preview" style="background:#1a3a2a;">
+          <div class="tp-cell called" style="background:#4CAF50; color:#fff;"></div>
+          <div class="tp-cell called" style="background:#81C784; color:#222;"></div>
+          <div class="tp-cell" style="background:#1a3a2a; color:#4a7a5a;">·</div>
+          <div class="tp-cell called" style="background:#A5D6A7; color:#222;"></div>
+          <div class="tp-cell" style="background:#1a3a2a; color:#4a7a5a;">·</div>
+          <div class="tp-cell" style="background:#1a3a2a; color:#4a7a5a;">·</div>
+        </div>
+        <div class="theme-name">Blackboard</div>
+      </div>
+
+      <div class="theme-option" data-theme="highcontrast">
+        <div class="theme-preview" style="background:#000;">
+          <div class="tp-cell called" style="background:#00BFFF; color:#000;"></div>
+          <div class="tp-cell called" style="background:#FF4444; color:#fff;"></div>
+          <div class="tp-cell" style="background:#111; color:#666;">·</div>
+          <div class="tp-cell called" style="background:#00FF7F; color:#000;"></div>
+          <div class="tp-cell" style="background:#111; color:#666;">·</div>
+          <div class="tp-cell" style="background:#111; color:#666;">·</div>
+        </div>
+        <div class="theme-name">High Contrast</div>
+      </div>
+
     </div>
   </div>
 
@@ -670,6 +770,22 @@ document.getElementById('selectAll').addEventListener('click', () =>
 document.getElementById('selectNone').addEventListener('click', () =>
   grid.querySelectorAll('.pattern-item').forEach(i => i.classList.remove('checked')));
 
+// ── Theme selection ───────────────────────────────────────────────────────
+let selectedTheme = saved.displayTheme || 'dark';
+
+function applyThemeSelection(theme) {
+  selectedTheme = theme;
+  document.querySelectorAll('.theme-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.theme === theme);
+  });
+}
+
+applyThemeSelection(selectedTheme);
+
+document.querySelectorAll('.theme-option').forEach(el => {
+  el.addEventListener('click', () => applyThemeSelection(el.dataset.theme));
+});
+
 // ── Save ──────────────────────────────────────────────────────────────────
 document.getElementById('saveBtn').addEventListener('click', () => {
   const checkedPatterns = [...grid.querySelectorAll('.pattern-item.checked')]
@@ -681,12 +797,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   }
 
   const config = {
-    logo:     logoImg.src && logoImg.style.display !== 'none' ? logoImg.src : null,
-    wildcard: document.getElementById('cfg-wildcard').checked,
-    counter:  document.getElementById('cfg-counter').checked,
-    lastball: document.getElementById('cfg-lastball').checked,
-    showlogo: document.getElementById('cfg-showlogo').checked,
-    patterns: checkedPatterns,
+    logo:         logoImg.src && logoImg.style.display !== 'none' ? logoImg.src : null,
+    wildcard:     document.getElementById('cfg-wildcard').checked,
+    counter:      document.getElementById('cfg-counter').checked,
+    lastball:     document.getElementById('cfg-lastball').checked,
+    showlogo:     document.getElementById('cfg-showlogo').checked,
+    displayTheme: selectedTheme,
+    patterns:     checkedPatterns,
   };
 
   localStorage.setItem('bingoConfig', JSON.stringify(config));
