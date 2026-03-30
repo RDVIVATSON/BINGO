@@ -373,18 +373,21 @@ body {
 /* Wildcard Banner */
 .wildcard-banner {
     position: fixed;
-    top: 10%;
+    top: 8%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: gold;
-    color: black;
-    font-size: 3vw;
-    padding: 20px;
-    border: 3px solid red;
-    border-radius: 15px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    padding: 20px 40px;
+    border-radius: 16px;
     z-index: 9999;
-    animation: pulse 1s infinite;
-    font-family: 'Permanent Marker', cursive;
+    text-align: center;
+    border: 2px solid #e94560;
+    box-shadow: 0 0 40px rgba(233, 69, 96, 0.5), 0 8px 32px rgba(0,0,0,0.6);
+    animation: wildcardPulse 1.5s ease-in-out infinite;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    min-width: 320px;
+    white-space: nowrap;
 }
 
 /* Spray Burst Animation */
@@ -402,10 +405,10 @@ body {
     opacity: 1;
 }
 
-@keyframes pulse {
-    0% { transform: translateX(-50%) scale(1); }
-    50% { transform: translateX(-50%) scale(1.1); }
-    100% { transform: translateX(-50%) scale(1); }
+@keyframes wildcardPulse {
+    0%   { box-shadow: 0 0 40px rgba(233,69,96,0.5), 0 8px 32px rgba(0,0,0,0.6); }
+    50%  { box-shadow: 0 0 70px rgba(233,69,96,0.9), 0 8px 32px rgba(0,0,0,0.6); }
+    100% { box-shadow: 0 0 40px rgba(233,69,96,0.5), 0 8px 32px rgba(0,0,0,0.6); }
 }
 
 /* Responsive Layout */

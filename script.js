@@ -106,12 +106,29 @@ function callNumber(column, number) {
 }
 
 function triggerWildcard(digit) {
+    // Write wildcard event to localStorage so display.html picks it up
+    try {
+        localStorage.setItem('bingoWildcard', JSON.stringify({
+            digit: digit,
+            timestamp: Date.now()
+        }));
+    } catch(e) {}
+
+    // Modern banner design
     const banner = document.createElement('div');
-    banner.textContent = `Wildcard Activated: 3 ${digit}'s in a row. mark off all remaining ${digit}'s!`;
+    banner.innerHTML = `
+        <div style="font-size:clamp(10px,1.2vw,16px);letter-spacing:4px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Wildcard Activated</div>
+        <div style="font-size:clamp(28px,4vw,56px);font-weight:900;letter-spacing:2px;">All <span style="color:#FFD700;">${digit}s</span> are Wild!</div>
+        <div style="font-size:clamp(10px,1.1vw,15px);opacity:0.7;margin-top:8px;letter-spacing:1px;">Mark off every number ending in ${digit}</div>
+    `;
     banner.className = 'wildcard-banner';
     document.body.appendChild(banner);
 
-    setTimeout(() => banner.remove(), 15000);
+    setTimeout(() => {
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => banner.remove(), 500);
+    }, 15000);
 
     const spray = document.createElement('div');
     spray.className = 'graffiti-spray';

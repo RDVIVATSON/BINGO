@@ -261,11 +261,89 @@
 <div class="bottom-controls">
   <div id="ballCounter">Balls Called: 0</div>
   <button class="reset" onclick="resetBoard()">Reset Board</button>
+  <button class="config-link" onclick="showHelp()" title="How to Use" style="background:none;border:none;cursor:pointer;font-size:clamp(14px,1.4vw,20px);opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">❓</button>
   <a href="display.html" target="_blank" class="config-link" title="TV Display">📺</a>
   <a href="config.html" class="config-link" title="Settings">⚙️</a>
 </div>
 
     </div>
+<!-- Help / Intro Overlay -->
+<div id="helpOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:10000; overflow-y:auto;">
+  <div style="max-width:600px; margin:40px auto; background:#16213e; border-radius:16px; border:1px solid #e94560; padding:32px; color:#eee; font-family:Arial,sans-serif; position:relative;">
+    <button onclick="closeHelp()" style="position:absolute; top:14px; right:16px; background:none; border:none; color:#aaa; font-size:22px; cursor:pointer; line-height:1;">&#x2715;</button>
+
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-size:2.2rem; font-weight:900; color:#e94560; letter-spacing:4px;">BINGO</div>
+      <div style="font-size:1rem; color:#aaa; letter-spacing:6px;">NIGHT</div>
+      <div style="margin-top:8px; font-size:0.85rem; color:#666;">Caller App Guide</div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Getting Started</div>
+      <p style="font-size:0.9rem; line-height:1.6; color:#ccc;">Select a Bingo pattern from the dropdown on the right side. The pattern image will update to show players what they need to mark. When ready, start calling balls by clicking the numbered buttons on the board.</p>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Calling Numbers</div>
+      <ul style="font-size:0.9rem; line-height:1.8; color:#ccc; padding-left:18px;">
+        <li>Click any number button to mark it as called. It will flash and turn red.</li>
+        <li>The last called ball appears in the sidebar with its ball image.</li>
+        <li>Call history tracks all called numbers in order, most recent first.</li>
+        <li>Click a called number again to un-call it.</li>
+      </ul>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Wildcard Feature</div>
+      <p style="font-size:0.9rem; line-height:1.6; color:#ccc;">When enabled, if 3 consecutive called numbers share the same last digit (e.g. B5, I25, O65), a Wildcard is triggered. All remaining numbers with that digit are automatically marked, and a banner announces it to the room.</p>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Controls</div>
+      <ul style="font-size:0.9rem; line-height:1.8; color:#ccc; padding-left:18px;">
+        <li><strong style="color:#fff;">Reset Board</strong> - Clears all called numbers and starts fresh.</li>
+        <li><strong style="color:#fff;">TV Display</strong> - Opens a second screen view for a projector or TV.</li>
+        <li><strong style="color:#fff;">Settings</strong> - Configure logo, patterns, and feature toggles.</li>
+        <li><strong style="color:#fff;">This button</strong> - Reopens this guide anytime.</li>
+      </ul>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Pattern Selection</div>
+      <p style="font-size:0.9rem; line-height:1.6; color:#ccc;">Over 150 patterns are available. Use the Settings page to limit the dropdown to only the patterns you use regularly. The pattern image updates live as you switch selections.</p>
+    </div>
+
+    <button onclick="closeHelp()" style="display:block; width:100%; padding:12px; background:#e94560; color:#fff; border:none; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer; letter-spacing:1px;">Got It, Let's Play</button>
+  </div>
+</div>
+
+<script>
+  function showHelp() {
+    document.getElementById('helpOverlay').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeHelp() {
+    document.getElementById('helpOverlay').style.display = 'none';
+    document.body.style.overflow = '';
+    // Set cookie for 365 days
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = 'bingo_visited=true; expires=' + expires.toUTCString() + '; path=/';
+  }
+
+  function getCookie(name) {
+    return document.cookie.split('; ').find(r => r.startsWith(name + '=')) || null;
+  }
+
+  // Show on first visit only
+  window.addEventListener('load', function() {
+    if (!getCookie('bingo_visited')) {
+      showHelp();
+    }
+  });
+</script>
+
     <script src="script.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 	<script>
