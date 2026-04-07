@@ -259,9 +259,10 @@ function resetBoard() {
     try {
         const pattern   = document.getElementById('patterns') ? document.getElementById('patterns').value : '';
         const isSpeed   = document.getElementById('enableSpeedBingo') ? document.getElementById('enableSpeedBingo').checked : false;
-        const jackpotEl = document.getElementById('jackpotAmount');
-        const jackpot   = (!isSpeed && jackpotEl) ? parseFloat(jackpotEl.value) || 0 : 0;
-        const winners   = document.querySelectorAll('[id^="bingo-claim-"]').length;
+        const jackpotEl  = document.getElementById('jackpotAmount');
+        const winnersEl  = document.getElementById('winnersCount');
+        const jackpot    = (!isSpeed && jackpotEl) ? parseFloat(jackpotEl.value) || 0 : 0;
+        const winners    = winnersEl ? parseInt(winnersEl.value) || 0 : 0;
         const dateStr   = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
         const roundKey  = `round_${Date.now()}`;
@@ -278,8 +279,9 @@ function resetBoard() {
 
         set(ref(db, `bingoStats/rounds/${roundKey}`), roundData);
 
-        // Clear jackpot field
+        // Clear jackpot and winners fields
         if (jackpotEl) jackpotEl.value = '';
+        if (winnersEl) winnersEl.value = '';
     } catch(e) { console.error('Stats write failed:', e); }
 
     calledNumbers = [];

@@ -574,6 +574,7 @@ function applyState(state) {
   // Jackpot
   const jackpotWrap = document.getElementById('displayJackpotWrap');
   const jackpotEl   = document.getElementById('displayJackpot');
+  const payoutEl    = document.getElementById('displayPayout');
   if (state.jackpot > 0) {
     jackpotWrap.style.display = 'block';
     jackpotEl.textContent = '$' + state.jackpot.toFixed(2);
