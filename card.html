@@ -230,6 +230,37 @@
 
     .daub-animate { animation: daub-pop 0.3s ease; }
 
+    /* Expired screen */
+    #expiredScreen {
+      position: fixed;
+      inset: 0;
+      background: #0d0d1a;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 300;
+      text-align: center;
+      padding: 32px;
+    }
+
+    #expiredScreen h2 {
+      font-size: clamp(24px, 7vw, 42px);
+      font-weight: 900;
+      color: #e94560;
+      letter-spacing: 2px;
+    }
+
+    #expiredScreen p {
+      color: #555;
+      font-size: clamp(12px, 3vw, 15px);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
     /* Setup screen */
     #setupScreen {
       position: fixed;
@@ -319,6 +350,17 @@
   </style>
 </head>
 <body>
+
+<!-- Expired screen — shown when board resets -->
+<div id="expiredScreen">
+  <svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" style="width:min(240px,65vw);">
+    <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+    <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+    <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+  </svg>
+  <h2>Round Over</h2>
+  <p>These cards are no longer valid. Ask the caller to scan a new QR code for the next round.</p>
+</div>
 
 <!-- Setup screen — shown on first load -->
 <div id="setupScreen">
@@ -540,6 +582,10 @@ document.getElementById('startBtn').addEventListener('click', () => {
   container.innerHTML = '';
   cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
 
+  // Capture current sessionId from Firebase before showing waiting screen
+  // (will be set on first Firebase update in the listener)
+  cardSessionId = null;
+
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('waitingScreen').style.display = 'flex';
 
@@ -645,6 +691,7 @@ function sortCards(patternName) {
 let winShown = new Set();
 let lastTimestamp = null;
 let currentPattern = 'regular4c';
+let cardSessionId = null; // set when player hits start
 
 function startFirebaseListener() {
   onValue(ref(db, 'bingoState'), snapshot => {
@@ -663,6 +710,20 @@ function startFirebaseListener() {
 
     document.getElementById('waitingScreen').style.display = 'none';
     document.getElementById('pageWrap').style.display = 'flex';
+
+    // Store sessionId on first update after player starts
+    if (cardSessionId === null && state.sessionId) {
+      cardSessionId = state.sessionId;
+    }
+
+    // If sessionId changed, this round is over — invalidate cards
+    if (cardSessionId && state.sessionId && state.sessionId !== cardSessionId) {
+      document.getElementById('expiredScreen').style.display = 'flex';
+      document.getElementById('pageWrap').style.display = 'none';
+      document.getElementById('waitingScreen').style.display = 'none';
+      document.getElementById('winOverlay').classList.remove('show');
+      return;
+    }
 
     // Detect reset
     if (lastTimestamp !== null && state.timestamp < lastTimestamp) {

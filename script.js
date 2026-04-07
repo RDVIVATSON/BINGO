@@ -263,14 +263,17 @@ function resetBoard() {
     lastClickedButton = null;
     updateLastNumber();
 
-    // Clear both localStorage and Firebase
+    // Generate new sessionId to invalidate existing player cards
+    const newSessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
     const emptyState = {
         calledNumbers: [],
         lastCalled: null,
         pattern: document.getElementById('patterns')
             ? document.getElementById('patterns').value
             : '',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        sessionId: newSessionId
     };
 
     try { localStorage.setItem('bingoState', JSON.stringify(emptyState)); } catch(e) {}
@@ -328,6 +331,15 @@ function updateBallCounter() {
         if (counterDiv) counterDiv.textContent = `Balls Called: ${count}`;
     } catch(e) {}
 
+    // Preserve existing sessionId or generate one if none exists
+    let sessionId;
+    try {
+        const existing = JSON.parse(localStorage.getItem('bingoState') || '{}');
+        sessionId = existing.sessionId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+    } catch(e) {
+        sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    }
+
     const state = {
         calledNumbers: calledNumbers.map(n => ({ column: n.column, number: n.number })),
         lastCalled: calledNumbers.length > 0
@@ -336,7 +348,8 @@ function updateBallCounter() {
         pattern: document.getElementById('patterns')
             ? document.getElementById('patterns').value
             : '',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        sessionId
     };
 
     // Sync to localStorage for display screen
