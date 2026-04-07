@@ -338,6 +338,11 @@ function updateBallCounter() {
     }
 }
 
+// Expose functions needed by inline HTML handlers
+window.displayPattern = displayPattern;
+window.resetBoard = resetBoard;
+window.callNumber = callNumber;
+
 // Initialize the board
 createBingoBoard();
 
