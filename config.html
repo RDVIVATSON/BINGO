@@ -553,7 +553,22 @@
 </div>
 <div class="save-status" id="saveStatus"></div>
 
-<script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js';
+import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDDG_V9d2hd7QxHaAuAVoQ2RsnjB3omB-M",
+  authDomain: "bingo-night-c2a1a.firebaseapp.com",
+  databaseURL: "https://bingo-night-c2a1a-default-rtdb.firebaseio.com",
+  projectId: "bingo-night-c2a1a",
+  storageBucket: "bingo-night-c2a1a.firebasestorage.app",
+  messagingSenderId: "118563477693",
+  appId: "1:118563477693:web:2fe869d3472f20da6a3fd4"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
 const ALL_PATTERNS = [
   { value: 'regular4c',       label: 'Regular-4C' },
   { value: 'fourcorners',     label: 'Four Corners' },
@@ -835,6 +850,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   };
 
   localStorage.setItem('bingoConfig', JSON.stringify(config));
+
+  // Write venue info to Firebase so player cards can read it
+  try {
+    set(ref(db, 'bingoVenue'), {
+      logo: config.logo || null
+    });
+  } catch(e) {}
 
   const status = document.getElementById('saveStatus');
   status.textContent = '✅ Settings saved!';

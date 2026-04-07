@@ -552,23 +552,24 @@ if (!urlSessionId) {
   localStorage.removeItem('bingoCardExpired');
 }
 
-// Apply venue logo to all screens
-function applyLogo() {
-  try {
-    const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
-    if (cfg.logo) {
-      ['cardLogoImg','waitLogoImg','setupLogoImg'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.src = cfg.logo; el.style.display = 'block'; }
-      });
-      ['cardLogoSvg','waitLogoSvg','setupLogoSvg'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-      });
-    }
-  } catch {}
+// Apply venue logo from Firebase
+function applyLogo(logoSrc) {
+  if (!logoSrc) return;
+  ['cardLogoImg','waitLogoImg','setupLogoImg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.src = logoSrc; el.style.display = 'block'; }
+  });
+  ['cardLogoSvg','waitLogoSvg','setupLogoSvg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 }
-applyLogo();
+
+// Load venue logo from Firebase once on page load
+get(ref(db, 'bingoVenue')).then(snapshot => {
+  const venue = snapshot.val();
+  if (venue && venue.logo) applyLogo(venue.logo);
+}).catch(() => {});
 
 // Show pack info on setup screen
 const setupPackDesc = document.getElementById('setupPackDesc');
