@@ -672,7 +672,13 @@ function startFirebaseListener() {
       winShown.clear();
     }
     lastTimestamp = state.timestamp;
-    currentPattern = state.pattern || 'regular4c';
+
+    // Detect pattern change — clear wins so new pattern can be won
+    const newPattern = state.pattern || 'regular4c';
+    if (newPattern !== currentPattern) {
+      winShown.clear();
+    }
+    currentPattern = newPattern;
 
     // Daub called numbers on all cards
     state.calledNumbers.forEach(({ column, number }) => {

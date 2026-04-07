@@ -116,6 +116,20 @@ function displayPattern() {
     };
 
     patternImage.src = imagePath;
+
+    // Clear stale BINGO claims and push new pattern to Firebase
+    try { set(ref(db, 'bingoClaims'), null); } catch(e) {}
+    // Push updated pattern to Firebase state so player cards update immediately
+    try {
+        const raw = localStorage.getItem('bingoState');
+        const state = raw ? JSON.parse(raw) : null;
+        if (state) {
+            state.pattern = selectedPattern;
+            state.timestamp = Date.now();
+            localStorage.setItem('bingoState', JSON.stringify(state));
+            set(ref(db, 'bingoState'), state);
+        }
+    } catch(e) {}
 }
 
 function callNumber(column, number) {
