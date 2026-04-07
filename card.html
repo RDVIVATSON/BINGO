@@ -413,7 +413,7 @@ function renderCard(cardData, cardNumber, index) {
       const cell = document.createElement('div');
       cell.className = 'card-cell' + (isFree ? ' free-space daubed' : '');
       cell.textContent = isFree ? 'FREE' : val;
-      if (!isFree) { cell.dataset.col = col; cell.dataset.num = val; }
+      if (!isFree) { cell.dataset.col = col; cell.dataset.num = String(val); }
       body.appendChild(cell);
     });
   }
@@ -511,6 +511,7 @@ onValue(ref(db, 'bingoState'), snapshot => {
 
   document.getElementById('waitingScreen').style.display = 'none';
   document.getElementById('pageWrap').style.display = 'flex';
+  document.getElementById('lastCalledBar').innerHTML = '';
 
   // Detect reset
   if (lastTimestamp !== null && state.timestamp < lastTimestamp) {
@@ -523,7 +524,8 @@ onValue(ref(db, 'bingoState'), snapshot => {
 
   // Daub called numbers on all cards
   state.calledNumbers.forEach(({ column, number }) => {
-    document.querySelectorAll(`.card-cell[data-col="${column}"][data-num="${number}"]`).forEach(cell => {
+    const num = String(number);
+    document.querySelectorAll(`.card-cell[data-col="${column}"][data-num="${num}"]`).forEach(cell => {
       if (!cell.classList.contains('daubed')) {
         cell.classList.add('daubed', 'daub-animate');
         setTimeout(() => cell.classList.remove('daub-animate'), 300);
