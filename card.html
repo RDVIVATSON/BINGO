@@ -419,7 +419,7 @@
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js';
-import { getDatabase, ref, onValue, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js';
+import { getDatabase, ref, onValue, push, serverTimestamp, get } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDDG_V9d2hd7QxHaAuAVoQ2RsnjB3omB-M",
@@ -563,10 +563,26 @@ const savedName = localStorage.getItem('bingoPlayerName') || '';
 const nameInput = document.getElementById('playerName');
 if (nameInput && savedName) nameInput.value = savedName;
 
-// Cards array — populated when player hits start
+// Cards array — populated when player hits start or restored from localStorage
 let cards = [];
 let playerName = '';
 const container = document.getElementById('cardsContainer');
+
+function saveCardsToStorage(cardSet, name) {
+  try {
+    localStorage.setItem('bingoSavedCards', JSON.stringify({
+      cards: cardSet.map(c => ({ cardNumber: c.cardNumber, index: c.index, data: c.data })),
+      playerName: name
+    }));
+  } catch(e) {}
+}
+
+function loadCardsFromStorage() {
+  try {
+    const raw = localStorage.getItem('bingoSavedCards');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
 
 document.getElementById('startBtn').addEventListener('click', () => {
   playerName = (document.getElementById('playerName').value || '').trim();
@@ -579,12 +595,13 @@ document.getElementById('startBtn').addEventListener('click', () => {
     data: generateCard(),
   }));
 
+  saveCardsToStorage(cards, playerName);
+
   container.innerHTML = '';
   cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
 
-  // Capture current sessionId from Firebase before showing waiting screen
-  // (will be set on first Firebase update in the listener)
   cardSessionId = null;
+  localStorage.removeItem('bingoCardSessionId');
 
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('waitingScreen').style.display = 'flex';
@@ -691,7 +708,39 @@ function sortCards(patternName) {
 let winShown = new Set();
 let lastTimestamp = null;
 let currentPattern = 'regular4c';
-let cardSessionId = null; // set when player hits start
+let cardSessionId = null;
+
+// On page load, check for saved cards and session validity
+const storedSessionId = localStorage.getItem('bingoCardSessionId');
+const savedCards = loadCardsFromStorage();
+
+if (storedSessionId && savedCards) {
+  get(ref(db, 'bingoState')).then(snapshot => {
+    const state = snapshot.val();
+
+    if (state && state.sessionId && state.sessionId !== storedSessionId) {
+      // Session changed — clear stored cards and show expired screen
+      localStorage.removeItem('bingoCardSessionId');
+      localStorage.removeItem('bingoSavedCards');
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('expiredScreen').style.display = 'flex';
+      return;
+    }
+
+    // Session matches — restore cards and resume
+    cards = savedCards.cards;
+    playerName = savedCards.playerName || '';
+    cardSessionId = storedSessionId;
+
+    container.innerHTML = '';
+    cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
+
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('waitingScreen').style.display = 'flex';
+
+    startFirebaseListener();
+  }).catch(() => {});
+}
 
 function startFirebaseListener() {
   onValue(ref(db, 'bingoState'), snapshot => {
@@ -700,6 +749,8 @@ function startFirebaseListener() {
     if (!state || !state.calledNumbers || state.calledNumbers.length === 0) {
       // Check if this is a new round (session changed) — expire cards
       if (cardSessionId && state && state.sessionId && state.sessionId !== cardSessionId) {
+        localStorage.removeItem('bingoCardSessionId');
+        localStorage.removeItem('bingoSavedCards');
         document.getElementById('expiredScreen').style.display = 'flex';
         document.getElementById('pageWrap').style.display = 'none';
         document.getElementById('waitingScreen').style.display = 'none';
@@ -719,13 +770,16 @@ function startFirebaseListener() {
     document.getElementById('waitingScreen').style.display = 'none';
     document.getElementById('pageWrap').style.display = 'flex';
 
-    // Store sessionId on first update after player starts
+    // Store sessionId on first Firebase update (fresh start only)
     if (cardSessionId === null && state.sessionId) {
       cardSessionId = state.sessionId;
+      localStorage.setItem('bingoCardSessionId', cardSessionId);
     }
 
     // If sessionId changed, this round is over — invalidate cards
     if (cardSessionId && state.sessionId && state.sessionId !== cardSessionId) {
+      localStorage.removeItem('bingoCardSessionId');
+      localStorage.removeItem('bingoSavedCards');
       document.getElementById('expiredScreen').style.display = 'flex';
       document.getElementById('pageWrap').style.display = 'none';
       document.getElementById('waitingScreen').style.display = 'none';
