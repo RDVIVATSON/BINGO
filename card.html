@@ -282,8 +282,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
-// Standard win lines used for all patterns not explicitly mapped
-const WIN_LINES = [
+// Standard win lines used as fallback for unmapped patterns
+const STANDARD_LINES = [
   [[0,0],[0,1],[0,2],[0,3],[0,4]],
   [[1,0],[1,1],[1,2],[1,3],[1,4]],
   [[2,0],[2,1],[2,2],[2,3],[2,4]],
@@ -298,7 +298,49 @@ const WIN_LINES = [
   [[0,4],[1,3],[2,2],[3,1],[4,0]],
 ];
 
-function getWinLines() { return WIN_LINES; }
+// Pattern map — each entry is an array of winning lines.
+// Multiple lines = any one of them completes the win.
+// Single line with all cells = entire shape must be complete.
+const PATTERN_MAP = {
+
+  // Regular bingo (any standard line) or four corners — either wins
+  regular4c: [
+    ...STANDARD_LINES,
+    [[0,0],[0,4],[4,0],[4,4]], // four corners
+  ],
+
+  fourcorners: [
+    [[0,0],[0,4],[4,0],[4,4]],
+  ],
+
+  blackout: [
+    [[0,0],[0,1],[0,2],[0,3],[0,4],
+     [1,0],[1,1],[1,2],[1,3],[1,4],
+     [2,0],[2,1],[2,2],[2,3],[2,4],
+     [3,0],[3,1],[3,2],[3,3],[3,4],
+     [4,0],[4,1],[4,2],[4,3],[4,4]],
+  ],
+
+  halfmoon: [
+    [[0,3],
+     [1,3],[1,4],
+     [2,2],[2,3],[2,4],
+     [3,0],[3,1],[3,2],[3,3],[3,4],
+     [4,1],[4,2],[4,3]],
+  ],
+
+  musicnote: [
+    [[0,2],[0,3],
+     [1,2],[1,4],
+     [2,1],[2,2],
+     [3,0],[3,1],[3,2],
+     [4,1]],
+  ],
+};
+
+function getWinLines(patternName) {
+  return PATTERN_MAP[patternName] || STANDARD_LINES;
+}
 
 // Card generation
 const RANGES = { B:[1,15], I:[16,30], N:[31,45], G:[46,60], O:[61,75] };
@@ -383,11 +425,12 @@ function renderCard(cardData, cardNumber, index) {
 const container = document.getElementById('cardsContainer');
 cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
 
-// Get best line score for a card
-function getBestLineScore(cardEl) {
+// Get best line score for a card against current pattern
+function getBestLineScore(cardEl, patternName) {
   const cells = cardEl.querySelectorAll('.card-cell');
+  const lines = getWinLines(patternName);
   let best = 0;
-  WIN_LINES.forEach(line => {
+  lines.forEach(line => {
     const count = line.filter(([r, c]) => cells[r * 5 + c]?.classList.contains('daubed')).length;
     if (count > best) best = count;
   });
@@ -395,28 +438,30 @@ function getBestLineScore(cardEl) {
 }
 
 // Get best line cells for highlighting
-function getBestLine(cardEl) {
+function getBestLine(cardEl, patternName) {
   const cells = cardEl.querySelectorAll('.card-cell');
+  const lines = getWinLines(patternName);
   let best = -1, bestLine = null;
-  WIN_LINES.forEach(line => {
+  lines.forEach(line => {
     const count = line.filter(([r, c]) => cells[r * 5 + c]?.classList.contains('daubed')).length;
     if (count > best) { best = count; bestLine = line; }
   });
   return bestLine;
 }
 
-// Check win
-function checkWin(cardEl) {
+// Check win against current pattern
+function checkWin(cardEl, patternName) {
   const cells = cardEl.querySelectorAll('.card-cell');
-  return WIN_LINES.some(line => line.every(([r, c]) => cells[r * 5 + c]?.classList.contains('daubed')));
+  const lines = getWinLines(patternName);
+  return lines.some(line => line.every(([r, c]) => cells[r * 5 + c]?.classList.contains('daubed')));
 }
 
 // Sort cards by score
-function sortCards() {
+function sortCards(patternName) {
   const scored = cards.map(c => ({
     ...c,
     el: document.getElementById(`card-${c.cardNumber}`),
-    score: getBestLineScore(document.getElementById(`card-${c.cardNumber}`))
+    score: getBestLineScore(document.getElementById(`card-${c.cardNumber}`), patternName)
   })).sort((a, b) => b.score - a.score);
 
   scored.forEach((s, i) => {
@@ -497,7 +542,7 @@ onValue(ref(db, 'bingoState'), snapshot => {
 
     // Clear and re-apply needs-daub
     cardEl.querySelectorAll('.card-cell').forEach(cell => cell.classList.remove('needs-daub'));
-    const bestLine = getBestLine(cardEl);
+    const bestLine = getBestLine(cardEl, currentPattern);
     if (bestLine) {
       const cells = cardEl.querySelectorAll('.card-cell');
       bestLine.forEach(([r, cv]) => {
@@ -514,14 +559,14 @@ onValue(ref(db, 'bingoState'), snapshot => {
   }
 
   // Sort
-  sortCards();
+  sortCards(currentPattern);
 
   // Check wins
   cards.forEach(c => {
     if (winShown.has(c.cardNumber)) return;
     const cardEl = document.getElementById(`card-${c.cardNumber}`);
     if (!cardEl) return;
-    if (checkWin(cardEl)) {
+    if (checkWin(cardEl, currentPattern)) {
       winShown.add(c.cardNumber);
       push(ref(db, 'bingoClaims'), {
         cardNumber: c.index + 1,
