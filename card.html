@@ -615,6 +615,14 @@ document.getElementById('startBtn').addEventListener('click', () => {
   }));
 
   saveCardsToStorage(cards, playerName);
+  // Track QR scan in stats
+  try {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    push(ref(db, `bingoStats/qrScans/${dateStr}`), {
+      timestamp: serverTimestamp(),
+      cards: totalCards
+    });
+  } catch(e) {}
   localStorage.removeItem('bingoCardExpired');
   // Store the URL session ID so refreshes can validate against it
   if (urlSessionId) localStorage.setItem('bingoCardSessionId', urlSessionId);

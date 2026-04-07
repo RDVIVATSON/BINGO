@@ -220,6 +220,13 @@
                 <span class="toggle-text">Wildcard</span>
               </label>
             </div>
+            <div class="wildcard-toggle" id="speedBingoWrap">
+              <label class="toggle-label">
+                <input type="checkbox" id="enableSpeedBingo">
+                <span class="toggle-slider"></span>
+                <span class="toggle-text">Speed</span>
+              </label>
+            </div>
         </div>
 		<div id="pattern-display" class="pattern-box">
             <img id="pattern-image" src="images/regular4c.gif" alt="Bingo Pattern">
@@ -246,6 +253,15 @@
   <img id="venueLogo" class="beer-image" src="" alt="BINGO NIGHT">
 </div>
 
+<div id="jackpotSection" style="display:none; width:100%; padding:4px 0; text-align:center; flex-shrink:0;">
+  <p style="font-size:clamp(9px,0.9vw,12px); font-weight:bold; color:#888; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase;">Jackpot Collected</p>
+  <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+    <span style="font-size:clamp(12px,1.2vw,16px); font-weight:bold; color:#27ae60;">$</span>
+    <input type="number" id="jackpotAmount" min="0" step="0.01" placeholder="0.00"
+      style="width:80px; background:#1a1a2e; color:#fff; border:1px solid #333; border-radius:6px; padding:4px 6px; font-size:clamp(12px,1.2vw,16px); text-align:center;">
+  </div>
+</div>
+
 
 <div class="last-number">
   <p>Last Ball Called:</p>
@@ -263,6 +279,7 @@
   <button class="reset" onclick="resetBoard()">Reset Board</button>
   <a href="display.html" target="_blank" class="config-link" title="TV Display">📺</a>
   <a href="config.html" class="config-link" title="Settings">⚙️</a>
+  <a href="stats.html" target="_blank" class="config-link" title="Statistics">📊</a>
   <button class="config-link" id="qrBtn" title="Player QR Code" style="background:none;border:none;cursor:pointer;font-size:clamp(14px,1.4vw,20px);opacity:0.6;transition:opacity 0.2s;padding:0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📱</button>
 </div>
 
@@ -325,6 +342,42 @@
 	  }
 	})();
 	</script>
+
+<script>
+// Speed bingo toggle logic
+(function() {
+  const speedToggle = document.getElementById('enableSpeedBingo');
+  const qrBtn       = document.getElementById('qrBtn');
+  const jackpotSec  = document.getElementById('jackpotSection');
+
+  function applySpeedBingo(isSpeed) {
+    // Hide QR button in speed mode
+    if (qrBtn) qrBtn.style.display = isSpeed ? 'none' : '';
+    // Show jackpot only in standard mode when blackout is selected
+    updateJackpotVisibility();
+  }
+
+  function updateJackpotVisibility() {
+    const isSpeed   = speedToggle && speedToggle.checked;
+    const pattern   = document.getElementById('patterns');
+    const isBlackout = pattern && pattern.value === 'blackout';
+    if (jackpotSec) jackpotSec.style.display = (!isSpeed && isBlackout) ? 'block' : 'none';
+  }
+
+  if (speedToggle) {
+    speedToggle.addEventListener('change', () => applySpeedBingo(speedToggle.checked));
+  }
+
+  // Also update jackpot visibility when pattern changes
+  const patternSelect = document.getElementById('patterns');
+  if (patternSelect) {
+    patternSelect.addEventListener('change', updateJackpotVisibility);
+  }
+
+  // Initial state
+  applySpeedBingo(speedToggle ? speedToggle.checked : false);
+})();
+</script>
 <!-- QR Code Modal -->
 <div id="qrModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
   <div style="background:#1a1a2e; border-radius:16px; padding:28px; text-align:center; max-width:340px; width:90%;">

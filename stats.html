@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BINGO Night — Statistics</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d0d1a;
+      color: #eee;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      color: #e94560;
+      letter-spacing: 3px;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #555;
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 1100px;
+      margin: 0 auto 24px;
+    }
+
+    .card {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #1e3a6e;
+    }
+
+    .card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .card h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #e94560;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1e3a6e;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.9rem;
+    }
+
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: #888; }
+    .stat-value { color: #fff; font-weight: bold; font-size: 1rem; }
+    .stat-value.green { color: #27ae60; }
+    .stat-value.yellow { color: #f39c12; }
+
+    /* Date selector */
+    .date-bar {
+      max-width: 1100px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .date-bar label { color: #888; font-size: 0.85rem; letter-spacing: 1px; }
+
+    .date-bar select {
+      background: #16213e;
+      color: #eee;
+      border: 1px solid #1e3a6e;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    /* Pattern bar chart */
+    .pattern-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .pattern-bar:last-child { border-bottom: none; }
+
+    .pattern-bar-label {
+      width: 140px;
+      font-size: 0.8rem;
+      color: #aaa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    .pattern-bar-track {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      height: 16px;
+      overflow: hidden;
+    }
+
+    .pattern-bar-fill {
+      height: 100%;
+      background: #e94560;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .pattern-bar-count {
+      width: 28px;
+      text-align: right;
+      font-size: 0.8rem;
+      color: #888;
+      flex-shrink: 0;
+    }
+
+    /* Night history table */
+    .night-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .night-table th {
+      text-align: left;
+      color: #555;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 8px;
+      border-bottom: 1px solid #1e3a6e;
+    }
+
+    .night-table td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: #ccc;
+    }
+
+    .night-table tr:last-child td { border-bottom: none; }
+    .night-table td.money { color: #27ae60; font-weight: bold; }
+    .night-table td.dim { color: #555; font-style: italic; }
+
+    /* Loading */
+    #loadingMsg {
+      text-align: center;
+      color: #555;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 40px;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      color: #555;
+      font-size: 0.85rem;
+      text-decoration: none;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+
+    .back-link:hover { color: #e94560; }
+
+    /* Tabs */
+    .tabs {
+      max-width: 1100px;
+      margin: 0 auto 20px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .tab-btn {
+      padding: 8px 20px;
+      background: #16213e;
+      border: 1px solid #1e3a6e;
+      color: #888;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #e94560;
+      border-color: #e94560;
+      color: #fff;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+</head>
+<body>
+
+<a href="config.html" class="back-link">← Back to Config</a>
+
+<h1>📊 BINGO Statistics</h1>
+<p class="subtitle" id="loadingMsg">Loading stats...</p>
+
+<div id="mainContent" style="display:none;">
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('overall')">Overall</button>
+    <button class="tab-btn" onclick="showTab('nightly')">By Night</button>
+    <button class="tab-btn" onclick="showTab('patterns')">Patterns</button>
+    <button class="tab-btn" onclick="showTab('history')">Round History</button>
+  </div>
+
+  <!-- Overall Tab -->
+  <div class="tab-panel active" id="tab-overall">
+    <div class="grid">
+      <div class="card">
+        <h2>Games</h2>
+        <div class="stat-row"><span class="stat-label">Total Rounds Played</span><span class="stat-value" id="totalRounds">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total Game Nights</span><span class="stat-value" id="totalNights">0</span></div>
+        <div class="stat-row"><span class="stat-label">Avg Balls Per Round</span><span class="stat-value" id="avgBalls">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total Wildcards Fired</span><span class="stat-value" id="totalWildcards">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total QR Cards Issued</span><span class="stat-value" id="totalQR">0</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Jackpot (Standard Games)</h2>
+        <div class="stat-row"><span class="stat-label">Total Collected</span><span class="stat-value green" id="totalJackpot">$0</span></div>
+        <div class="stat-row"><span class="stat-label">Average Jackpot</span><span class="stat-value green" id="avgJackpot">$0</span></div>
+        <div class="stat-row"><span class="stat-label">Highest Jackpot</span><span class="stat-value yellow" id="highJackpot">$0</span></div>
+        <div class="stat-row"><span class="stat-label">Lowest Jackpot</span><span class="stat-value" id="lowJackpot">$0</span></div>
+        <div class="stat-row"><span class="stat-label">Total Winners Paid</span><span class="stat-value" id="totalWinners">0</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Speed Bingo</h2>
+        <div class="stat-row"><span class="stat-label">Speed Rounds Played</span><span class="stat-value" id="speedRounds">0</span></div>
+        <div class="stat-row"><span class="stat-label">Standard Rounds Played</span><span class="stat-value" id="standardRounds">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nightly Tab -->
+  <div class="tab-panel" id="tab-nightly">
+    <div class="date-bar">
+      <label>Select Night:</label>
+      <select id="nightSelect" onchange="renderNightlyStats()">
+        <option value="">All Nights</option>
+      </select>
+    </div>
+    <div class="grid" id="nightlyGrid"></div>
+  </div>
+
+  <!-- Patterns Tab -->
+  <div class="tab-panel" id="tab-patterns">
+    <div class="grid">
+      <div class="card full-width">
+        <h2>Pattern Play Frequency</h2>
+        <div id="patternBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Tab -->
+  <div class="tab-panel" id="tab-history">
+    <div class="grid">
+      <div class="card full-width">
+        <h2>Round History</h2>
+        <div style="overflow-x:auto;">
+          <table class="night-table" id="historyTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Pattern</th>
+                <th>Balls</th>
+                <th>Wildcards</th>
+                <th>Winners</th>
+                <th>Jackpot</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js';
+import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDDG_V9d2hd7QxHaAuAVoQ2RsnjB3omB-M",
+  authDomain: "bingo-night-c2a1a.firebaseapp.com",
+  databaseURL: "https://bingo-night-c2a1a-default-rtdb.firebaseio.com",
+  projectId: "bingo-night-c2a1a",
+  storageBucket: "bingo-night-c2a1a.firebasestorage.app",
+  messagingSenderId: "118563477693",
+  appId: "1:118563477693:web:2fe869d3472f20da6a3fd4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+let allRounds = [];
+let qrScansByDate = {};
+
+window.showTab = function(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  event.target.classList.add('active');
+};
+
+function fmt(n) { return '$' + (n || 0).toFixed(2); }
+
+function renderOverall() {
+  const rounds      = allRounds;
+  const nights      = new Set(rounds.map(r => r.date)).size;
+  const avgBalls    = rounds.length ? Math.round(rounds.reduce((s,r) => s + (r.ballsCalled||0), 0) / rounds.length) : 0;
+  const totalWC     = rounds.reduce((s,r) => s + (r.wildcards||0), 0);
+  const jackpotRounds = rounds.filter(r => !r.speedBingo && r.jackpot > 0);
+  const totalJP     = jackpotRounds.reduce((s,r) => s + r.jackpot, 0);
+  const avgJP       = jackpotRounds.length ? totalJP / jackpotRounds.length : 0;
+  const highJP      = jackpotRounds.length ? Math.max(...jackpotRounds.map(r => r.jackpot)) : 0;
+  const lowJP       = jackpotRounds.length ? Math.min(...jackpotRounds.map(r => r.jackpot)) : 0;
+  const totalWin    = rounds.reduce((s,r) => s + (r.winners||0), 0);
+  const totalQR     = Object.values(qrScansByDate).reduce((s, scans) => {
+    return s + Object.values(scans).reduce((ss, scan) => ss + (scan.cards||0), 0);
+  }, 0);
+  const speedCount  = rounds.filter(r => r.speedBingo).length;
+
+  document.getElementById('totalRounds').textContent  = rounds.length;
+  document.getElementById('totalNights').textContent  = nights;
+  document.getElementById('avgBalls').textContent     = avgBalls;
+  document.getElementById('totalWildcards').textContent = totalWC;
+  document.getElementById('totalQR').textContent      = totalQR;
+  document.getElementById('totalJackpot').textContent = fmt(totalJP);
+  document.getElementById('avgJackpot').textContent   = fmt(avgJP);
+  document.getElementById('highJackpot').textContent  = fmt(highJP);
+  document.getElementById('lowJackpot').textContent   = fmt(lowJP);
+  document.getElementById('totalWinners').textContent = totalWin;
+  document.getElementById('speedRounds').textContent  = speedCount;
+  document.getElementById('standardRounds').textContent = rounds.length - speedCount;
+}
+
+function renderPatterns() {
+  const counts = {};
+  allRounds.forEach(r => {
+    if (r.pattern) counts[r.pattern] = (counts[r.pattern] || 0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  const max = sorted.length ? sorted[0][1] : 1;
+
+  const container = document.getElementById('patternBars');
+  container.innerHTML = '';
+
+  sorted.forEach(([pattern, count]) => {
+    const pct = Math.round((count / max) * 100);
+    const row = document.createElement('div');
+    row.className = 'pattern-bar';
+    row.innerHTML = `
+      <div class="pattern-bar-label">${pattern}</div>
+      <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:${pct}%"></div></div>
+      <div class="pattern-bar-count">${count}</div>
+    `;
+    container.appendChild(row);
+  });
+
+  if (!sorted.length) container.innerHTML = '<p style="color:#555; font-size:0.85rem;">No data yet.</p>';
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('historyBody');
+  tbody.innerHTML = '';
+  const sorted = [...allRounds].sort((a,b) => b.timestamp - a.timestamp);
+  sorted.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.date}</td>
+      <td>${r.pattern || '—'}</td>
+      <td>${r.ballsCalled || 0}</td>
+      <td>${r.wildcards || 0}</td>
+      <td>${r.winners || 0}</td>
+      <td class="${r.jackpot > 0 ? 'money' : 'dim'}">${r.jackpot > 0 ? fmt(r.jackpot) : r.speedBingo ? 'Speed' : '—'}</td>
+      <td style="color:#555; font-size:0.8rem;">${r.speedBingo ? 'Speed' : 'Standard'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (!sorted.length) tbody.innerHTML = '<tr><td colspan="7" style="color:#555; text-align:center; padding:20px;">No rounds recorded yet.</td></tr>';
+}
+
+function populateNightSelect() {
+  const dates = [...new Set(allRounds.map(r => r.date))].sort().reverse();
+  const select = document.getElementById('nightSelect');
+  dates.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d;
+    select.appendChild(opt);
+  });
+}
+
+window.renderNightlyStats = function() {
+  const date    = document.getElementById('nightSelect').value;
+  const rounds  = date ? allRounds.filter(r => r.date === date) : allRounds;
+  const grid    = document.getElementById('nightlyGrid');
+  grid.innerHTML = '';
+
+  const totalJP   = rounds.filter(r => !r.speedBingo).reduce((s,r) => s + (r.jackpot||0), 0);
+  const totalWC   = rounds.reduce((s,r) => s + (r.wildcards||0), 0);
+  const totalWin  = rounds.reduce((s,r) => s + (r.winners||0), 0);
+  const avgBalls  = rounds.length ? Math.round(rounds.reduce((s,r) => s + (r.ballsCalled||0), 0) / rounds.length) : 0;
+
+  let qrCards = 0;
+  if (date && qrScansByDate[date]) {
+    qrCards = Object.values(qrScansByDate[date]).reduce((s, scan) => s + (scan.cards||0), 0);
+  } else if (!date) {
+    qrCards = Object.values(qrScansByDate).reduce((s, scans) => {
+      return s + Object.values(scans).reduce((ss, scan) => ss + (scan.cards||0), 0);
+    }, 0);
+  }
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <h2>${date || 'All Nights'}</h2>
+    <div class="stat-row"><span class="stat-label">Rounds Played</span><span class="stat-value">${rounds.length}</span></div>
+    <div class="stat-row"><span class="stat-label">Total Jackpot</span><span class="stat-value green">${fmt(totalJP)}</span></div>
+    <div class="stat-row"><span class="stat-label">Total Winners</span><span class="stat-value">${totalWin}</span></div>
+    <div class="stat-row"><span class="stat-label">Avg Balls/Round</span><span class="stat-value">${avgBalls}</span></div>
+    <div class="stat-row"><span class="stat-label">Wildcards Fired</span><span class="stat-value">${totalWC}</span></div>
+    <div class="stat-row"><span class="stat-label">QR Cards Issued</span><span class="stat-value">${qrCards}</span></div>
+  `;
+  grid.appendChild(card);
+};
+
+// Load data
+async function loadStats() {
+  try {
+    const [roundsSnap, qrSnap] = await Promise.all([
+      get(ref(db, 'bingoStats/rounds')),
+      get(ref(db, 'bingoStats/qrScans'))
+    ]);
+
+    const roundsData = roundsSnap.val() || {};
+    allRounds = Object.values(roundsData);
+
+    qrScansByDate = qrSnap.val() || {};
+
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+
+    renderOverall();
+    renderPatterns();
+    renderHistory();
+    populateNightSelect();
+    renderNightlyStats();
+  } catch(e) {
+    document.getElementById('loadingMsg').textContent = 'Error loading stats.';
+    console.error(e);
+  }
+}
+
+loadStats();
+</script>
+</body>
+</html>

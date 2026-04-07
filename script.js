@@ -76,6 +76,8 @@ window.dismissClaim = function(cardNumber) {
 
 let calledNumbers = [];
 let lastClickedButton = null;
+let wildcardCount = 0;
+let gameStartTime = Date.now();
 
 function createBingoBoard() {
     const columns = ['B', 'I', 'N', 'G', 'O'];
@@ -196,6 +198,7 @@ function callNumber(column, number) {
 }
 
 function triggerWildcard(digit) {
+    wildcardCount++;
     const banner = document.createElement('div');
     banner.textContent = `Wildcard Activated: 3 ${digit}'s in a row. mark off all remaining ${digit}'s!`;
     banner.className = 'wildcard-banner';
@@ -252,7 +255,36 @@ function resetBoard() {
     const confirmReset = confirm("Are you sure you want to reset the board?");
     if (!confirmReset) return;
 
+    // Write round stats to Firebase before clearing
+    try {
+        const pattern   = document.getElementById('patterns') ? document.getElementById('patterns').value : '';
+        const isSpeed   = document.getElementById('enableSpeedBingo') ? document.getElementById('enableSpeedBingo').checked : false;
+        const jackpotEl = document.getElementById('jackpotAmount');
+        const jackpot   = (!isSpeed && pattern === 'blackout' && jackpotEl) ? parseFloat(jackpotEl.value) || 0 : 0;
+        const winners   = document.querySelectorAll('[id^="bingo-claim-"]').length;
+        const dateStr   = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+        const roundKey  = `round_${Date.now()}`;
+        const roundData = {
+            date:         dateStr,
+            pattern:      pattern,
+            ballsCalled:  calledNumbers.length,
+            wildcards:    wildcardCount,
+            jackpot:      jackpot,
+            winners:      winners,
+            speedBingo:   isSpeed,
+            timestamp:    Date.now()
+        };
+
+        set(ref(db, `bingoStats/rounds/${roundKey}`), roundData);
+
+        // Clear jackpot field
+        if (jackpotEl) jackpotEl.value = '';
+    } catch(e) { console.error('Stats write failed:', e); }
+
     calledNumbers = [];
+    wildcardCount = 0;
+    gameStartTime = Date.now();
 
     document.querySelectorAll('.bingo-column button').forEach(button => {
         button.classList.remove('called', 'flashing');
