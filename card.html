@@ -747,8 +747,9 @@ function startFirebaseListener() {
     const state = snapshot.val();
 
     if (!state || !state.calledNumbers || state.calledNumbers.length === 0) {
-      // Check if this is a new round (session changed) — expire cards
-      if (cardSessionId && state && state.sessionId && state.sessionId !== cardSessionId) {
+      // Always check localStorage for stored session — don't rely on in-memory cardSessionId
+      const activeSession = localStorage.getItem('bingoCardSessionId');
+      if (activeSession && state && state.sessionId && state.sessionId !== activeSession) {
         localStorage.removeItem('bingoCardSessionId');
         localStorage.removeItem('bingoSavedCards');
         document.getElementById('expiredScreen').style.display = 'flex';
@@ -777,7 +778,8 @@ function startFirebaseListener() {
     }
 
     // If sessionId changed, this round is over — invalidate cards
-    if (cardSessionId && state.sessionId && state.sessionId !== cardSessionId) {
+    const activeSession = localStorage.getItem('bingoCardSessionId');
+    if (activeSession && state.sessionId && state.sessionId !== activeSession) {
       localStorage.removeItem('bingoCardSessionId');
       localStorage.removeItem('bingoSavedCards');
       document.getElementById('expiredScreen').style.display = 'flex';
