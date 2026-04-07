@@ -493,6 +493,7 @@ try {
 
 let winShown = new Set();
 let lastTimestamp = null;
+let currentPattern = 'regular4c';
 
 // Firebase listener
 onValue(ref(db, 'bingoState'), snapshot => {
@@ -521,6 +522,7 @@ onValue(ref(db, 'bingoState'), snapshot => {
     winShown.clear();
   }
   lastTimestamp = state.timestamp;
+  currentPattern = state.pattern || 'regular4c';
 
   // Daub called numbers on all cards
   state.calledNumbers.forEach(({ column, number }) => {
