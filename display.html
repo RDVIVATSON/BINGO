@@ -253,33 +253,6 @@
   }
   #fsBtn:hover { background: rgba(255,255,255,0.35); opacity: 1; }
 
-  /* Wildcard banner */
-  .wildcard-banner {
-    position: fixed;
-    top: 8%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: #fff;
-    padding: 24px 48px;
-    border-radius: 16px;
-    z-index: 9999;
-    text-align: center;
-    border: 2px solid #e94560;
-    box-shadow: 0 0 60px rgba(233,69,96,0.6), 0 8px 40px rgba(0,0,0,0.7);
-    animation: wildcardPulse 1.5s ease-in-out infinite;
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    min-width: 380px;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-
-  @keyframes wildcardPulse {
-    0%   { box-shadow: 0 0 60px rgba(233,69,96,0.6), 0 8px 40px rgba(0,0,0,0.7); }
-    50%  { box-shadow: 0 0 100px rgba(233,69,96,1),  0 8px 40px rgba(0,0,0,0.7); }
-    100% { box-shadow: 0 0 60px rgba(233,69,96,0.6), 0 8px 40px rgba(0,0,0,0.7); }
-  }
-
   /* No state message */
   .no-state {
     position: fixed;
@@ -344,6 +317,11 @@
     <div class="display-count">
       Balls Called<br>
       <span id="displayCount">0</span>
+    </div>
+
+    <div id="displayJackpotWrap" style="display:none; text-align:center; flex-shrink:0; padding:4px 0;">
+      <div style="font-size:clamp(9px,1vw,13px); color:#888; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">Jackpot</div>
+      <div style="font-size:clamp(18px,2.5vw,36px); font-weight:900; color:#27ae60;" id="displayJackpot">$0.00</div>
     </div>
 
   </div>
@@ -543,6 +521,7 @@ function applyState(state) {
     document.getElementById('displayGrid').style.display = 'none';
     document.getElementById('noState').style.display = 'flex';
     document.getElementById('displayCount').textContent = '0';
+    document.getElementById('displayJackpotWrap').style.display = 'none';
     return;
   }
 
@@ -591,6 +570,16 @@ function applyState(state) {
 
   // Count
   document.getElementById('displayCount').textContent = state.calledNumbers.length;
+
+  // Jackpot
+  const jackpotWrap = document.getElementById('displayJackpotWrap');
+  const jackpotEl   = document.getElementById('displayJackpot');
+  if (state.jackpot > 0) {
+    jackpotWrap.style.display = 'block';
+    jackpotEl.textContent = '$' + state.jackpot.toFixed(2);
+  } else {
+    jackpotWrap.style.display = 'none';
+  }
 }
 
 // Poll localStorage every second
@@ -633,19 +622,6 @@ function poll() {
     const raw   = localStorage.getItem('bingoState');
     const state = raw ? JSON.parse(raw) : null;
     applyState(state);
-
-    // Wildcard banner detection
-    try {
-        const wcRaw = localStorage.getItem('bingoWildcard');
-        if (wcRaw) {
-            const wc = JSON.parse(wcRaw);
-            const age = Date.now() - wc.timestamp;
-            if (age < 15000 && window._lastWildcardTs !== wc.timestamp) {
-                window._lastWildcardTs = wc.timestamp;
-                showWildcardBanner(wc.digit);
-            }
-        }
-    } catch(e) {}
   } catch(e) {
     console.error('Display error:', e);
   }
@@ -669,28 +645,6 @@ function poll() {
     btn.style.display = document.webkitFullscreenElement ? 'none' : 'flex';
   });
 })();
-
-function showWildcardBanner(digit) {
-    // Remove any existing banner
-    const existing = document.getElementById('wcBanner');
-    if (existing) existing.remove();
-
-    const banner = document.createElement('div');
-    banner.id = 'wcBanner';
-    banner.className = 'wildcard-banner';
-    banner.innerHTML = `
-        <div style="font-size:clamp(12px,1.4vw,18px);letter-spacing:4px;text-transform:uppercase;opacity:0.8;margin-bottom:8px;">Wildcard Activated</div>
-        <div style="font-size:clamp(32px,5vw,72px);font-weight:900;letter-spacing:2px;">All <span style="color:#FFD700;">${digit}s</span> are Wild!</div>
-        <div style="font-size:clamp(11px,1.2vw,16px);opacity:0.7;margin-top:10px;letter-spacing:1px;">Mark off every number ending in ${digit}</div>
-    `;
-    document.body.appendChild(banner);
-
-    setTimeout(() => {
-        banner.style.opacity = '0';
-        banner.style.transform = 'translateX(-50%) translateY(-20px)';
-        setTimeout(() => banner.remove(), 500);
-    }, 14500);
-}
 
 buildBoard();
 poll();

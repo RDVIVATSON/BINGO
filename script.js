@@ -260,7 +260,7 @@ function resetBoard() {
         const pattern   = document.getElementById('patterns') ? document.getElementById('patterns').value : '';
         const isSpeed   = document.getElementById('enableSpeedBingo') ? document.getElementById('enableSpeedBingo').checked : false;
         const jackpotEl = document.getElementById('jackpotAmount');
-        const jackpot   = (!isSpeed && pattern === 'blackout' && jackpotEl) ? parseFloat(jackpotEl.value) || 0 : 0;
+        const jackpot   = (!isSpeed && jackpotEl) ? parseFloat(jackpotEl.value) || 0 : 0;
         const winners   = document.querySelectorAll('[id^="bingo-claim-"]').length;
         const dateStr   = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
@@ -381,7 +381,8 @@ function updateBallCounter() {
             ? document.getElementById('patterns').value
             : '',
         timestamp: Date.now(),
-        sessionId
+        sessionId,
+        jackpot: parseFloat(document.getElementById('jackpotAmount') ? document.getElementById('jackpotAmount').value : 0) || 0
     };
 
     // Sync to localStorage for display screen
@@ -403,6 +404,9 @@ function updateBallCounter() {
 window.displayPattern = displayPattern;
 window.resetBoard = resetBoard;
 window.callNumber = callNumber;
+window._db = db;
+window._fbRef = ref;
+window._fbSet = set;
 
 // Initialize the board
 createBingoBoard();

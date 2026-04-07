@@ -370,6 +370,25 @@
     speedToggle.addEventListener('change', () => applySpeedBingo(speedToggle.checked));
   }
 
+  // Sync jackpot to Firebase state when caller types
+  const jackpotInput = document.getElementById('jackpotAmount');
+  if (jackpotInput) {
+    jackpotInput.addEventListener('input', () => {
+      try {
+        const raw = localStorage.getItem('bingoState');
+        const state = raw ? JSON.parse(raw) : null;
+        if (state) {
+          state.jackpot = parseFloat(jackpotInput.value) || 0;
+          localStorage.setItem('bingoState', JSON.stringify(state));
+          // Use script.js set function — access via window
+          if (window._fbSet && window._fbRef && window._db) {
+            window._fbSet(window._fbRef(window._db, 'bingoState'), state);
+          }
+        }
+      } catch(e) {}
+    });
+  }
+
   // Also update jackpot visibility when pattern changes
   const patternSelect = document.getElementById('patterns');
   if (patternSelect) {
