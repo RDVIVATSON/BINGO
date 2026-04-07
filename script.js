@@ -1,6 +1,6 @@
 // Firebase setup
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDDG_V9d2hd7QxHaAuAVoQ2RsnjB3omB-M",
@@ -14,6 +14,63 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
+
+// Listen for BINGO claims from player cards
+onValue(ref(db, 'bingoClaims'), snapshot => {
+    const claims = snapshot.val();
+    if (!claims) return;
+    Object.entries(claims).forEach(([key, claim]) => {
+        showBingoClaim(claim.cardNumber, claim.timestamp);
+    });
+});
+
+function showBingoClaim(cardNumber, timestamp) {
+    // Remove any existing banner for same card
+    const existing = document.getElementById(`bingo-claim-${cardNumber}`);
+    if (existing) return;
+
+    const banner = document.createElement('div');
+    banner.id = `bingo-claim-${cardNumber}`;
+    banner.style.cssText = `
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #e94560;
+        color: white;
+        font-size: clamp(14px, 2vw, 22px);
+        font-weight: bold;
+        padding: 14px 28px;
+        border-radius: 12px;
+        z-index: 9999;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        animation: slideDown 0.3s ease;
+        font-family: Arial, sans-serif;
+        letter-spacing: 1px;
+    `;
+    banner.innerHTML = `
+        🎉 BINGO! Card #${cardNumber}
+        <button onclick="dismissClaim('${cardNumber}')" style="background:rgba(0,0,0,0.25);border:none;color:white;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px;font-weight:bold;">Dismiss</button>
+    `;
+
+    if (!document.getElementById('bingo-claim-style')) {
+        const style = document.createElement('style');
+        style.id = 'bingo-claim-style';
+        style.textContent = `@keyframes slideDown { from { top:-60px; opacity:0; } to { top:16px; opacity:1; } }`;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(banner);
+}
+
+window.dismissClaim = function(cardNumber) {
+    const banner = document.getElementById(`bingo-claim-${cardNumber}`);
+    if (banner) banner.remove();
+    remove(ref(db, `bingoClaims/card_${cardNumber}`));
+};
 
 let calledNumbers = [];
 let lastClickedButton = null;
