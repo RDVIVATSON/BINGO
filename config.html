@@ -447,6 +447,17 @@
 
     <div class="feature-row">
       <div>
+        <div class="feature-label">Digital Player Cards (QR)</div>
+        <div class="feature-desc">Show QR code button on caller screen</div>
+      </div>
+      <label class="toggle-label">
+        <input type="checkbox" id="cfg-qr" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="feature-row">
+      <div>
         <div class="feature-label">Digital Card Pack Size</div>
         <div class="feature-desc">Cards per QR scan (e.g. 3 cards = 1 pack)</div>
       </div>
@@ -747,6 +758,7 @@ document.getElementById('cfg-wildcard').checked  = saved.wildcard  !== false;
 document.getElementById('cfg-counter').checked   = saved.counter   !== false;
 document.getElementById('cfg-lastball').checked  = saved.lastball  !== false;
 document.getElementById('cfg-showlogo').checked  = saved.showlogo  !== false;
+document.getElementById('cfg-qr').checked        = saved.qr        !== false;
 document.getElementById('cfg-packsize').value    = saved.packsize  || '3';
 
 // ── Pattern grid ──────────────────────────────────────────────────────────
@@ -816,6 +828,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     counter:      document.getElementById('cfg-counter').checked,
     lastball:     document.getElementById('cfg-lastball').checked,
     showlogo:     document.getElementById('cfg-showlogo').checked,
+    qr:           document.getElementById('cfg-qr').checked,
     packsize:     parseInt(document.getElementById('cfg-packsize').value) || 3,
     displayTheme: selectedTheme,
     patterns:     checkedPatterns,

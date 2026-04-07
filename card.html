@@ -229,11 +229,163 @@
     }
 
     .daub-animate { animation: daub-pop 0.3s ease; }
+
+    /* Setup screen */
+    #setupScreen {
+      position: fixed;
+      inset: 0;
+      background: #0d0d1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 150;
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    #setupScreen svg { width: min(240px, 65vw); }
+    #setupScreen img.setup-logo { max-width: 65vw; max-height: 80px; object-fit: contain; display: none; }
+
+    .setup-card {
+      background: #16213e;
+      border-radius: 14px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      border: 1px solid #1e3a6e;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .setup-card h2 {
+      font-size: 1rem;
+      color: #e94560;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .setup-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: left;
+    }
+
+    .setup-field label {
+      font-size: 12px;
+      color: #888;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .setup-field input,
+    .setup-field select {
+      background: #0f3460;
+      color: #fff;
+      border: 1px solid #1e3a6e;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 16px;
+      width: 100%;
+    }
+
+    .setup-field input::placeholder { color: #555; }
+
+    .setup-field .pack-controls {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #1e3a6e;
+    }
+
+    .pack-controls button {
+      background: #0f3460;
+      color: #fff;
+      border: none;
+      width: 48px;
+      height: 44px;
+      font-size: 22px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .pack-controls button:hover { background: #e94560; }
+
+    .pack-controls span {
+      flex: 1;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      background: #0a0a1a;
+      height: 44px;
+      line-height: 44px;
+    }
+
+    .setup-desc {
+      font-size: 11px;
+      color: #555;
+      text-align: left;
+      margin-top: -8px;
+    }
+
+    .setup-btn {
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+
+    .setup-btn:hover { background: #c73652; }
   </style>
 </head>
 <body>
 
-<div id="waitingScreen">
+<!-- Setup screen — shown on first load -->
+<div id="setupScreen">
+  <svg id="setupLogoSvg" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+    <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+    <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+  </svg>
+  <img class="setup-logo" id="setupLogoImg" src="" alt="">
+
+  <div class="setup-card">
+    <h2>Get Your Cards</h2>
+
+    <div class="setup-field">
+      <label>Your Name (optional)</label>
+      <input type="text" id="playerName" placeholder="Enter your name..." maxlength="30" autocomplete="off">
+    </div>
+
+    <div class="setup-field">
+      <label>Number of Packs</label>
+      <div class="pack-controls">
+        <button id="packMinus">−</button>
+        <span id="packCount">1</span>
+        <button id="packPlus">+</button>
+      </div>
+      <div class="setup-desc" id="packDesc">3 cards per pack — 3 cards total</div>
+    </div>
+
+    <button class="setup-btn" id="startBtn">Get My Cards</button>
+  </div>
+</div>
+
+<div id="waitingScreen" style="display:none;">
   <svg id="waitLogoSvg" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
     <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
     <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
@@ -368,19 +520,81 @@ function generateCard() {
 }
 
 // Get pack size from config
-let packSize = 3;
+let packSizePerPack = 3;
 try {
   const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
-  packSize = parseInt(cfg.packsize) || 3;
+  packSizePerPack = parseInt(cfg.packsize) || 3;
 } catch {}
 
-// Generate cards
-const sessionBase = Date.now();
-const cards = Array.from({ length: packSize }, (_, i) => ({
-  cardNumber: sessionBase + i,
-  index: i,
-  data: generateCard(),
-}));
+// Apply venue logo to all screens
+function applyLogo() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
+    if (cfg.logo) {
+      ['cardLogoImg','waitLogoImg','setupLogoImg'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.src = cfg.logo; el.style.display = 'block'; }
+      });
+      ['cardLogoSvg','waitLogoSvg','setupLogoSvg'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+  } catch {}
+}
+applyLogo();
+
+// Load saved player name
+const savedName = localStorage.getItem('bingoPlayerName') || '';
+const nameInput = document.getElementById('playerName');
+if (nameInput && savedName) nameInput.value = savedName;
+
+// Pack count controls
+let numPacks = 1;
+const packCountEl = document.getElementById('packCount');
+const packDescEl  = document.getElementById('packDesc');
+
+function updatePackDesc() {
+  const total = numPacks * packSizePerPack;
+  packDescEl.textContent = `${packSizePerPack} cards per pack — ${total} card${total !== 1 ? 's' : ''} total`;
+}
+updatePackDesc();
+
+document.getElementById('packMinus').addEventListener('click', () => {
+  if (numPacks > 1) { numPacks--; packCountEl.textContent = numPacks; updatePackDesc(); }
+});
+
+document.getElementById('packPlus').addEventListener('click', () => {
+  numPacks++;
+  packCountEl.textContent = numPacks;
+  updatePackDesc();
+});
+
+// Cards array — populated when player hits start
+let cards = [];
+let playerName = '';
+const container = document.getElementById('cardsContainer');
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  playerName = (document.getElementById('playerName').value || '').trim();
+  if (playerName) localStorage.setItem('bingoPlayerName', playerName);
+
+  const totalCards = numPacks * packSizePerPack;
+  const sessionBase = Date.now();
+  cards = Array.from({ length: totalCards }, (_, i) => ({
+    cardNumber: sessionBase + i,
+    index: i,
+    data: generateCard(),
+  }));
+
+  container.innerHTML = '';
+  cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
+
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('waitingScreen').style.display = 'flex';
+
+  startFirebaseListener();
+});
 
 // Render a card
 function renderCard(cardData, cardNumber, index) {
@@ -421,9 +635,7 @@ function renderCard(cardData, cardNumber, index) {
   return wrap;
 }
 
-// Build card DOM
-const container = document.getElementById('cardsContainer');
-cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
+// Cards built dynamically after player hits start button
 
 // Get best line score for a card against current pattern
 function getBestLineScore(cardEl, patternName) {
@@ -478,109 +690,99 @@ function sortCards(patternName) {
 }
 
 // Apply venue logo
-try {
-  const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
-  if (cfg.logo) {
-    ['cardLogoImg','waitLogoImg'].forEach(id => {
-      const el = document.getElementById(id);
-      el.src = cfg.logo;
-      el.style.display = 'block';
-    });
-    document.getElementById('cardLogoSvg').style.display = 'none';
-    document.getElementById('waitLogoSvg').style.display = 'none';
-  }
-} catch {}
+// (handled by applyLogo() called earlier)
 
 let winShown = new Set();
 let lastTimestamp = null;
 let currentPattern = 'regular4c';
 
-// Firebase listener
-onValue(ref(db, 'bingoState'), snapshot => {
-  const state = snapshot.val();
+function startFirebaseListener() {
+  onValue(ref(db, 'bingoState'), snapshot => {
+    const state = snapshot.val();
 
-  if (!state || !state.calledNumbers || state.calledNumbers.length === 0) {
-    document.getElementById('waitingScreen').style.display = 'flex';
-    document.getElementById('pageWrap').style.display = 'none';
-    document.querySelectorAll('.card-cell:not(.free-space)').forEach(c => {
-      c.classList.remove('daubed', 'daub-animate', 'needs-daub');
+    if (!state || !state.calledNumbers || state.calledNumbers.length === 0) {
+      document.getElementById('waitingScreen').style.display = 'flex';
+      document.getElementById('pageWrap').style.display = 'none';
+      document.querySelectorAll('.card-cell:not(.free-space)').forEach(c => {
+        c.classList.remove('daubed', 'daub-animate', 'needs-daub');
+      });
+      winShown.clear();
+      lastTimestamp = null;
+      return;
+    }
+
+    document.getElementById('waitingScreen').style.display = 'none';
+    document.getElementById('pageWrap').style.display = 'flex';
+
+    // Detect reset
+    if (lastTimestamp !== null && state.timestamp < lastTimestamp) {
+      document.querySelectorAll('.card-cell:not(.free-space)').forEach(c => {
+        c.classList.remove('daubed', 'daub-animate', 'needs-daub');
+      });
+      winShown.clear();
+    }
+    lastTimestamp = state.timestamp;
+    currentPattern = state.pattern || 'regular4c';
+
+    // Daub called numbers on all cards
+    state.calledNumbers.forEach(({ column, number }) => {
+      const num = String(number);
+      document.querySelectorAll(`.card-cell[data-col="${column}"][data-num="${num}"]`).forEach(cell => {
+        if (!cell.classList.contains('daubed')) {
+          cell.classList.add('daubed', 'daub-animate');
+          setTimeout(() => cell.classList.remove('daub-animate'), 300);
+        }
+      });
     });
-    winShown.clear();
-    lastTimestamp = null;
-    return;
-  }
 
-  document.getElementById('waitingScreen').style.display = 'none';
-  document.getElementById('pageWrap').style.display = 'flex';
-  document.getElementById('lastCalledBar').innerHTML = '';
+    // Update daub counts and best-line highlights
+    cards.forEach(c => {
+      const cardEl = document.getElementById(`card-${c.cardNumber}`);
+      if (!cardEl) return;
 
-  // Detect reset
-  if (lastTimestamp !== null && state.timestamp < lastTimestamp) {
-    document.querySelectorAll('.card-cell:not(.free-space)').forEach(c => {
-      c.classList.remove('daubed', 'daub-animate', 'needs-daub');
+      const daubed = cardEl.querySelectorAll('.card-cell.daubed').length;
+      const daubEl = document.getElementById(`daub-${c.cardNumber}`);
+      if (daubEl) daubEl.textContent = daubed;
+
+      cardEl.querySelectorAll('.card-cell').forEach(cell => cell.classList.remove('needs-daub'));
+      const bestLine = getBestLine(cardEl, currentPattern);
+      if (bestLine) {
+        const cells = cardEl.querySelectorAll('.card-cell');
+        bestLine.forEach(([r, cv]) => {
+          const cell = cells[r * 5 + cv];
+          if (cell && !cell.classList.contains('daubed')) cell.classList.add('needs-daub');
+        });
+      }
     });
-    winShown.clear();
-  }
-  lastTimestamp = state.timestamp;
-  currentPattern = state.pattern || 'regular4c';
 
-  // Daub called numbers on all cards
-  state.calledNumbers.forEach(({ column, number }) => {
-    const num = String(number);
-    document.querySelectorAll(`.card-cell[data-col="${column}"][data-num="${num}"]`).forEach(cell => {
-      if (!cell.classList.contains('daubed')) {
-        cell.classList.add('daubed', 'daub-animate');
-        setTimeout(() => cell.classList.remove('daub-animate'), 300);
+    // Update last called
+    if (state.lastCalled) {
+      const { column, number } = state.lastCalled;
+      document.getElementById('lastCalledBar').innerHTML = `Last called: <strong>${column}${number}</strong>`;
+    }
+
+    // Sort
+    sortCards(currentPattern);
+
+    // Check wins
+    cards.forEach(c => {
+      if (winShown.has(c.cardNumber)) return;
+      const cardEl = document.getElementById(`card-${c.cardNumber}`);
+      if (!cardEl) return;
+      if (checkWin(cardEl, currentPattern)) {
+        winShown.add(c.cardNumber);
+        push(ref(db, 'bingoClaims'), {
+          cardNumber: c.index + 1,
+          playerName: playerName || null,
+          timestamp: serverTimestamp()
+        });
+        const label = playerName ? `${playerName} — Card #${c.index + 1}` : `Card #${c.index + 1}`;
+        document.getElementById('winCardNum').textContent = label;
+        setTimeout(() => document.getElementById('winOverlay').classList.add('show'), 300);
       }
     });
   });
-
-  // Update daub counts and best-line highlights
-  cards.forEach(c => {
-    const cardEl = document.getElementById(`card-${c.cardNumber}`);
-    if (!cardEl) return;
-
-    const daubed = cardEl.querySelectorAll('.card-cell.daubed').length;
-    const daubEl = document.getElementById(`daub-${c.cardNumber}`);
-    if (daubEl) daubEl.textContent = daubed;
-
-    // Clear and re-apply needs-daub
-    cardEl.querySelectorAll('.card-cell').forEach(cell => cell.classList.remove('needs-daub'));
-    const bestLine = getBestLine(cardEl, currentPattern);
-    if (bestLine) {
-      const cells = cardEl.querySelectorAll('.card-cell');
-      bestLine.forEach(([r, cv]) => {
-        const cell = cells[r * 5 + cv];
-        if (cell && !cell.classList.contains('daubed')) cell.classList.add('needs-daub');
-      });
-    }
-  });
-
-  // Update last called
-  if (state.lastCalled) {
-    const { column, number } = state.lastCalled;
-    document.getElementById('lastCalledBar').innerHTML = `Last called: <strong>${column}${number}</strong>`;
-  }
-
-  // Sort
-  sortCards(currentPattern);
-
-  // Check wins
-  cards.forEach(c => {
-    if (winShown.has(c.cardNumber)) return;
-    const cardEl = document.getElementById(`card-${c.cardNumber}`);
-    if (!cardEl) return;
-    if (checkWin(cardEl, currentPattern)) {
-      winShown.add(c.cardNumber);
-      push(ref(db, 'bingoClaims'), {
-        cardNumber: c.index + 1,
-        timestamp: serverTimestamp()
-      });
-      document.getElementById('winCardNum').textContent = `Card #${c.index + 1}`;
-      setTimeout(() => document.getElementById('winOverlay').classList.add('show'), 300);
-    }
-  });
-});
+}
 </script>
 </body>
 </html>

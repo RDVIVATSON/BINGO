@@ -243,11 +243,7 @@
 -->
 
 <div class="static-section">
-  <svg class="beer-image" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
-    <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
-    <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
-    <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
-  </svg>
+  <img id="venueLogo" class="beer-image" src="" alt="BINGO NIGHT">
 </div>
 
 
@@ -280,18 +276,35 @@
 	  try { cfg = JSON.parse(localStorage.getItem('bingoConfig')) || {}; } catch {}
 
 	  // Logo
-	  const logoEl = document.querySelector('.static-section img');
+	  const logoEl = document.getElementById('venueLogo');
 	  if (logoEl) {
 	    if (cfg.showlogo === false) {
-	      logoEl.style.display = 'none';
+	      logoEl.closest('.static-section').style.display = 'none';
 	    } else if (cfg.logo) {
 	      logoEl.src = cfg.logo;
+	    } else {
+	      const svg = `<svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+	        <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+	        <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+	        <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+	      </svg>`;
+	      logoEl.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 	    }
 	  }
 
-	  // Wildcard toggle default
+	  // QR button visibility
+	  const qrBtn = document.getElementById('qrBtn');
+	  if (qrBtn && cfg.qr === false) qrBtn.style.display = 'none';
+
+	  // Wildcard toggle
 	  const wcToggle = document.getElementById('enableWildcard');
-	  if (wcToggle && cfg.wildcard !== undefined) wcToggle.checked = cfg.wildcard;
+	  const wcWrap = document.querySelector('.wildcard-toggle');
+	  if (cfg.wildcard === false) {
+	    if (wcWrap) wcWrap.style.display = 'none';
+	    if (wcToggle) wcToggle.checked = false;
+	  } else {
+	    if (wcToggle) wcToggle.checked = true;
+	  }
 
 	  // Ball counter visibility
 	  const counter = document.getElementById('ballCounter');

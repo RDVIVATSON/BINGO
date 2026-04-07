@@ -20,14 +20,15 @@ onValue(ref(db, 'bingoClaims'), snapshot => {
     const claims = snapshot.val();
     if (!claims) return;
     Object.entries(claims).forEach(([key, claim]) => {
-        showBingoClaim(claim.cardNumber, claim.timestamp);
+        showBingoClaim(claim.cardNumber, claim.playerName, claim.timestamp);
     });
 });
 
-function showBingoClaim(cardNumber, timestamp) {
-    // Remove any existing banner for same card
+function showBingoClaim(cardNumber, playerName, timestamp) {
     const existing = document.getElementById(`bingo-claim-${cardNumber}`);
     if (existing) return;
+
+    const label = playerName ? `${playerName} — Card #${cardNumber}` : `Card #${cardNumber}`;
 
     const banner = document.createElement('div');
     banner.id = `bingo-claim-${cardNumber}`;
@@ -50,9 +51,10 @@ function showBingoClaim(cardNumber, timestamp) {
         animation: slideDown 0.3s ease;
         font-family: Arial, sans-serif;
         letter-spacing: 1px;
+        white-space: nowrap;
     `;
     banner.innerHTML = `
-        🎉 BINGO! Card #${cardNumber}
+        🎉 BINGO! ${label}
         <button onclick="dismissClaim('${cardNumber}')" style="background:rgba(0,0,0,0.25);border:none;color:white;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px;font-weight:bold;">Dismiss</button>
     `;
 
