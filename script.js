@@ -241,11 +241,26 @@ function resetBoard() {
     document.querySelectorAll('.bingo-column button').forEach(button => {
         button.classList.remove('called', 'flashing');
         button.style.backgroundColor = '';
-        button.style.color = ''; 
+        button.style.color = '';
     });
 
     lastClickedButton = null;
     updateLastNumber();
+
+    // Clear both localStorage and Firebase
+    const emptyState = {
+        calledNumbers: [],
+        lastCalled: null,
+        pattern: document.getElementById('patterns')
+            ? document.getElementById('patterns').value
+            : '',
+        timestamp: Date.now()
+    };
+
+    try { localStorage.setItem('bingoState', JSON.stringify(emptyState)); } catch(e) {}
+    try { set(ref(db, 'bingoState'), emptyState); } catch(e) { console.error('Firebase reset failed:', e); }
+    try { set(ref(db, 'bingoClaims'), null); } catch(e) {}
+
     updateBallCounter();
 }
 
