@@ -327,30 +327,87 @@
 	</script>
 <!-- QR Code Modal -->
 <div id="qrModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#1a1a2e; border-radius:16px; padding:32px; text-align:center; max-width:320px; width:90%;">
-    <p style="color:#aaa; font-size:13px; letter-spacing:2px; text-transform:uppercase; margin-bottom:16px;">Player Card</p>
-    <div id="qrCodeContainer" style="background:white; padding:12px; border-radius:8px; display:inline-block; margin-bottom:16px;"></div>
-    <p style="color:#888; font-size:12px; margin-bottom:20px;">Scan to get a bingo card</p>
-    <button onclick="document.getElementById('qrModal').style.display='none'" style="background:#e94560; color:white; border:none; border-radius:8px; padding:10px 24px; cursor:pointer; font-size:14px; font-weight:bold;">Close</button>
+  <div style="background:#1a1a2e; border-radius:16px; padding:28px; text-align:center; max-width:340px; width:90%;">
+    <p style="color:#aaa; font-size:12px; letter-spacing:2px; text-transform:uppercase; margin-bottom:16px;">Player Card Setup</p>
+
+    <div id="qrSetup">
+      <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; text-align:left;">
+        <label style="color:#888; font-size:11px; letter-spacing:1px; text-transform:uppercase;">Number of Packs</label>
+        <div style="display:flex; align-items:center; border-radius:8px; overflow:hidden; border:1px solid #0f3460;">
+          <button id="qrPackMinus" style="background:#0f3460; color:#fff; border:none; width:44px; height:40px; font-size:20px; cursor:pointer;">−</button>
+          <span id="qrPackCount" style="flex:1; text-align:center; font-size:18px; font-weight:bold; background:#0a0a1a; height:40px; line-height:40px; color:#fff;">1</span>
+          <button id="qrPackPlus" style="background:#0f3460; color:#fff; border:none; width:44px; height:40px; font-size:20px; cursor:pointer;">+</button>
+        </div>
+        <div id="qrPackDesc" style="color:#555; font-size:11px; letter-spacing:1px;"></div>
+      </div>
+      <button id="qrGenerateBtn" style="background:#e94560; color:white; border:none; border-radius:8px; padding:12px 24px; cursor:pointer; font-size:15px; font-weight:bold; width:100%; margin-bottom:12px;">Generate QR Code</button>
+    </div>
+
+    <div id="qrDisplay" style="display:none;">
+      <div id="qrCodeContainer" style="background:white; padding:12px; border-radius:8px; display:inline-block; margin-bottom:12px;"></div>
+      <p id="qrPackLabel" style="color:#888; font-size:12px; margin-bottom:16px;"></p>
+      <button id="qrBackBtn" style="background:#0f3460; color:white; border:none; border-radius:8px; padding:8px 20px; cursor:pointer; font-size:13px; margin-right:8px;">Back</button>
+      <button onclick="document.getElementById('qrModal').style.display='none'" style="background:#e94560; color:white; border:none; border-radius:8px; padding:8px 20px; cursor:pointer; font-size:13px;">Close</button>
+    </div>
   </div>
 </div>
 
 <script type="module">
   import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm';
 
-  const cardURL = window.location.origin + window.location.pathname.replace('index.html', '') + 'card.html';
+  const baseURL = window.location.origin + window.location.pathname.replace('index.html', '') + 'card.html';
+
+  let qrPacks = 1;
+
+  function getPackSize() {
+    try { return parseInt(JSON.parse(localStorage.getItem('bingoConfig') || '{}').packsize) || 3; } catch { return 3; }
+  }
+
+  function updateQrDesc() {
+    const ps = getPackSize();
+    const total = qrPacks * ps;
+    document.getElementById('qrPackDesc').textContent = `${ps} cards per pack — ${total} card${total !== 1 ? 's' : ''} total`;
+  }
+
+  document.getElementById('qrPackMinus').addEventListener('click', () => {
+    if (qrPacks > 1) { qrPacks--; document.getElementById('qrPackCount').textContent = qrPacks; updateQrDesc(); }
+  });
+
+  document.getElementById('qrPackPlus').addEventListener('click', () => {
+    qrPacks++;
+    document.getElementById('qrPackCount').textContent = qrPacks;
+    updateQrDesc();
+  });
+
+  document.getElementById('qrGenerateBtn').addEventListener('click', () => {
+    const url = `${baseURL}?packs=${qrPacks}`;
+    const container = document.getElementById('qrCodeContainer');
+    container.innerHTML = '';
+    QRCode.toCanvas(document.createElement('canvas'), url, { width: 220, margin: 1 }, (err, canvas) => {
+      if (!err) container.appendChild(canvas);
+    });
+    const ps = getPackSize();
+    document.getElementById('qrPackLabel').textContent = `${qrPacks} pack${qrPacks !== 1 ? 's' : ''} — ${qrPacks * ps} cards`;
+    document.getElementById('qrSetup').style.display = 'none';
+    document.getElementById('qrDisplay').style.display = 'block';
+  });
+
+  document.getElementById('qrBackBtn').addEventListener('click', () => {
+    document.getElementById('qrSetup').style.display = 'block';
+    document.getElementById('qrDisplay').style.display = 'none';
+  });
 
   document.getElementById('qrBtn').addEventListener('click', () => {
     const modal = document.getElementById('qrModal');
-    const container = document.getElementById('qrCodeContainer');
-    container.innerHTML = '';
+    // Reset to setup view
+    document.getElementById('qrSetup').style.display = 'block';
+    document.getElementById('qrDisplay').style.display = 'none';
+    qrPacks = 1;
+    document.getElementById('qrPackCount').textContent = 1;
+    updateQrDesc();
     modal.style.display = 'flex';
-    QRCode.toCanvas(document.createElement('canvas'), cardURL, { width: 220, margin: 1 }, (err, canvas) => {
-      if (!err) container.appendChild(canvas);
-    });
   });
 
-  // Close modal on backdrop click
   document.getElementById('qrModal').addEventListener('click', function(e) {
     if (e.target === this) this.style.display = 'none';
   });

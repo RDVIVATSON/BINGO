@@ -295,44 +295,10 @@
 
     .setup-field input::placeholder { color: #555; }
 
-    .setup-field .pack-controls {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #1e3a6e;
-    }
-
-    .pack-controls button {
-      background: #0f3460;
-      color: #fff;
-      border: none;
-      width: 48px;
-      height: 44px;
-      font-size: 22px;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background 0.2s;
-    }
-
-    .pack-controls button:hover { background: #e94560; }
-
-    .pack-controls span {
-      flex: 1;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      background: #0a0a1a;
-      height: 44px;
-      line-height: 44px;
-    }
-
     .setup-desc {
-      font-size: 11px;
+      font-size: 12px;
       color: #555;
-      text-align: left;
-      margin-top: -8px;
+      text-align: center;
     }
 
     .setup-btn {
@@ -371,15 +337,7 @@
       <input type="text" id="playerName" placeholder="Enter your name..." maxlength="30" autocomplete="off">
     </div>
 
-    <div class="setup-field">
-      <label>Number of Packs</label>
-      <div class="pack-controls">
-        <button id="packMinus">−</button>
-        <span id="packCount">1</span>
-        <button id="packPlus">+</button>
-      </div>
-      <div class="setup-desc" id="packDesc">3 cards per pack — 3 cards total</div>
-    </div>
+    <div class="setup-desc" id="setupPackDesc" style="color:#555; font-size:12px; text-align:center; padding: 4px 0;"></div>
 
     <button class="setup-btn" id="startBtn">Get My Cards</button>
   </div>
@@ -519,12 +477,20 @@ function generateCard() {
   return card;
 }
 
-// Get pack size from config
+// Get pack count from URL, pack size from config
 let packSizePerPack = 3;
 try {
   const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
   packSizePerPack = parseInt(cfg.packsize) || 3;
 } catch {}
+
+let numPacks = 1;
+try {
+  const urlPacks = parseInt(new URLSearchParams(window.location.search).get('packs'));
+  if (urlPacks > 0) numPacks = urlPacks;
+} catch {}
+
+const totalCards = numPacks * packSizePerPack;
 
 // Apply venue logo to all screens
 function applyLogo() {
@@ -544,31 +510,16 @@ function applyLogo() {
 }
 applyLogo();
 
+// Show pack info on setup screen
+const setupPackDesc = document.getElementById('setupPackDesc');
+if (setupPackDesc) {
+  setupPackDesc.textContent = `${totalCards} card${totalCards !== 1 ? 's' : ''} (${numPacks} pack${numPacks !== 1 ? 's' : ''} of ${packSizePerPack})`;
+}
+
 // Load saved player name
 const savedName = localStorage.getItem('bingoPlayerName') || '';
 const nameInput = document.getElementById('playerName');
 if (nameInput && savedName) nameInput.value = savedName;
-
-// Pack count controls
-let numPacks = 1;
-const packCountEl = document.getElementById('packCount');
-const packDescEl  = document.getElementById('packDesc');
-
-function updatePackDesc() {
-  const total = numPacks * packSizePerPack;
-  packDescEl.textContent = `${packSizePerPack} cards per pack — ${total} card${total !== 1 ? 's' : ''} total`;
-}
-updatePackDesc();
-
-document.getElementById('packMinus').addEventListener('click', () => {
-  if (numPacks > 1) { numPacks--; packCountEl.textContent = numPacks; updatePackDesc(); }
-});
-
-document.getElementById('packPlus').addEventListener('click', () => {
-  numPacks++;
-  packCountEl.textContent = numPacks;
-  updatePackDesc();
-});
 
 // Cards array — populated when player hits start
 let cards = [];
@@ -579,7 +530,6 @@ document.getElementById('startBtn').addEventListener('click', () => {
   playerName = (document.getElementById('playerName').value || '').trim();
   if (playerName) localStorage.setItem('bingoPlayerName', playerName);
 
-  const totalCards = numPacks * packSizePerPack;
   const sessionBase = Date.now();
   cards = Array.from({ length: totalCards }, (_, i) => ({
     cardNumber: sessionBase + i,
