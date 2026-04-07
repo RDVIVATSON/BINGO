@@ -519,20 +519,38 @@ function generateCard() {
   return card;
 }
 
-// Get pack count from URL, pack size from config
+// Parse URL params — these are the authority
+const urlParams = new URLSearchParams(window.location.search);
+const urlSessionId = urlParams.get('session') || null;
+const urlPacks     = parseInt(urlParams.get('packs')) || 0;
+
+// Get pack size from config
 let packSizePerPack = 3;
 try {
   const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
   packSizePerPack = parseInt(cfg.packsize) || 3;
 } catch {}
 
-let numPacks = 1;
-try {
-  const urlPacks = parseInt(new URLSearchParams(window.location.search).get('packs'));
-  if (urlPacks > 0) numPacks = urlPacks;
-} catch {}
-
+const numPacks   = urlPacks > 0 ? urlPacks : 1;
 const totalCards = numPacks * packSizePerPack;
+
+// If no valid URL session (direct navigation, not a QR scan), show expired immediately
+// unless there are saved cards from a matching session (refresh scenario)
+const savedSessionId = localStorage.getItem('bingoCardSessionId');
+const savedCards     = loadCardsFromStorage();
+
+if (!urlSessionId) {
+  // No session in URL — only allow if they have valid saved cards
+  if (!savedSessionId || !savedCards) {
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('expiredScreen').style.display = 'flex';
+  }
+} else if (urlSessionId !== savedSessionId) {
+  // New QR scan with a different session — clear old cards, allow fresh start
+  localStorage.removeItem('bingoCardSessionId');
+  localStorage.removeItem('bingoSavedCards');
+  localStorage.removeItem('bingoCardExpired');
+}
 
 // Apply venue logo to all screens
 function applyLogo() {
@@ -597,12 +615,12 @@ document.getElementById('startBtn').addEventListener('click', () => {
 
   saveCardsToStorage(cards, playerName);
   localStorage.removeItem('bingoCardExpired');
+  // Store the URL session ID so refreshes can validate against it
+  if (urlSessionId) localStorage.setItem('bingoCardSessionId', urlSessionId);
+  cardSessionId = urlSessionId;
 
   container.innerHTML = '';
   cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
-
-  cardSessionId = null;
-  localStorage.removeItem('bingoCardSessionId');
 
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('waitingScreen').style.display = 'flex';
@@ -711,46 +729,40 @@ let lastTimestamp = null;
 let currentPattern = 'regular4c';
 let cardSessionId = null;
 
-// If a genuine new QR scan (has ?packs= param), clear expired flag
-if (new URLSearchParams(window.location.search).get('packs')) {
-  localStorage.removeItem('bingoCardExpired');
-}
+// Restore saved cards if session matches URL session
+if (urlSessionId && urlSessionId === savedSessionId && savedCards) {
+  // Refresh mid-game — restore exact cards
+  cards = savedCards.cards;
+  playerName = savedCards.playerName || '';
+  cardSessionId = savedSessionId;
 
-// If expired flag is set, show expired screen immediately — no setup
-if (localStorage.getItem('bingoCardExpired')) {
+  container.innerHTML = '';
+  cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
+
   document.getElementById('setupScreen').style.display = 'none';
-  document.getElementById('expiredScreen').style.display = 'flex';
-}
+  document.getElementById('waitingScreen').style.display = 'flex';
 
-// On page load, check for saved cards and session validity
-const storedSessionId = localStorage.getItem('bingoCardSessionId');
-const savedCards = loadCardsFromStorage();
-
-if (storedSessionId && savedCards) {
+  startFirebaseListener();
+} else if (!urlSessionId && savedSessionId && savedCards) {
+  // No session in URL but have saved cards — check Firebase to see if still valid
   get(ref(db, 'bingoState')).then(snapshot => {
     const state = snapshot.val();
-
-    if (state && state.sessionId && state.sessionId !== storedSessionId) {
+    if (state && state.sessionId && state.sessionId !== savedSessionId) {
       localStorage.removeItem('bingoCardSessionId');
       localStorage.removeItem('bingoSavedCards');
-      localStorage.setItem('bingoCardExpired', '1');
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('expiredScreen').style.display = 'flex';
-      return;
+    } else {
+      // Still valid — restore
+      cards = savedCards.cards;
+      playerName = savedCards.playerName || '';
+      cardSessionId = savedSessionId;
+      container.innerHTML = '';
+      cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('waitingScreen').style.display = 'flex';
+      startFirebaseListener();
     }
-
-    // Session matches — restore cards and resume
-    cards = savedCards.cards;
-    playerName = savedCards.playerName || '';
-    cardSessionId = storedSessionId;
-
-    container.innerHTML = '';
-    cards.forEach(c => container.appendChild(renderCard(c.data, c.cardNumber, c.index)));
-
-    document.getElementById('setupScreen').style.display = 'none';
-    document.getElementById('waitingScreen').style.display = 'flex';
-
-    startFirebaseListener();
   }).catch(() => {});
 }
 
@@ -784,18 +796,11 @@ function startFirebaseListener() {
     document.getElementById('waitingScreen').style.display = 'none';
     document.getElementById('pageWrap').style.display = 'flex';
 
-    // Store sessionId on first Firebase update (fresh start only)
-    if (cardSessionId === null && state.sessionId) {
-      cardSessionId = state.sessionId;
-      localStorage.setItem('bingoCardSessionId', cardSessionId);
-    }
-
-    // If sessionId changed, this round is over — invalidate cards
+    // Check session validity against localStorage
     const activeSession = localStorage.getItem('bingoCardSessionId');
     if (activeSession && state.sessionId && state.sessionId !== activeSession) {
       localStorage.removeItem('bingoCardSessionId');
       localStorage.removeItem('bingoSavedCards');
-      localStorage.setItem('bingoCardExpired', '1');
       document.getElementById('expiredScreen').style.display = 'flex';
       document.getElementById('pageWrap').style.display = 'none';
       document.getElementById('waitingScreen').style.display = 'none';

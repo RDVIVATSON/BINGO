@@ -380,7 +380,14 @@
   });
 
   document.getElementById('qrGenerateBtn').addEventListener('click', () => {
-    const url = `${baseURL}?packs=${qrPacks}`;
+    // Get current sessionId from localStorage state
+    let sessionId = '';
+    try {
+      const state = JSON.parse(localStorage.getItem('bingoState') || '{}');
+      sessionId = state.sessionId || '';
+    } catch(e) {}
+
+    const url = `${baseURL}?packs=${qrPacks}${sessionId ? '&session=' + sessionId : ''}`;
     const container = document.getElementById('qrCodeContainer');
     container.innerHTML = '';
     QRCode.toCanvas(document.createElement('canvas'), url, { width: 220, margin: 1 }, (err, canvas) => {
