@@ -698,6 +698,14 @@ function startFirebaseListener() {
     const state = snapshot.val();
 
     if (!state || !state.calledNumbers || state.calledNumbers.length === 0) {
+      // Check if this is a new round (session changed) — expire cards
+      if (cardSessionId && state && state.sessionId && state.sessionId !== cardSessionId) {
+        document.getElementById('expiredScreen').style.display = 'flex';
+        document.getElementById('pageWrap').style.display = 'none';
+        document.getElementById('waitingScreen').style.display = 'none';
+        document.getElementById('winOverlay').classList.remove('show');
+        return;
+      }
       document.getElementById('waitingScreen').style.display = 'flex';
       document.getElementById('pageWrap').style.display = 'none';
       document.querySelectorAll('.card-cell:not(.free-space)').forEach(c => {
