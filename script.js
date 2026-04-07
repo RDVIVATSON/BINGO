@@ -1,3 +1,20 @@
+// Firebase setup
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDDG_V9d2hd7QxHaAuAVoQ2RsnjB3omB-M",
+  authDomain: "bingo-night-c2a1a.firebaseapp.com",
+  databaseURL: "https://bingo-night-c2a1a-default-rtdb.firebaseio.com",
+  projectId: "bingo-night-c2a1a",
+  storageBucket: "bingo-night-c2a1a.firebasestorage.app",
+  messagingSenderId: "118563477693",
+  appId: "1:118563477693:web:2fe869d3472f20da6a3fd4"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
 let calledNumbers = [];
 let lastClickedButton = null;
 
@@ -106,29 +123,12 @@ function callNumber(column, number) {
 }
 
 function triggerWildcard(digit) {
-    // Write wildcard event to localStorage so display.html picks it up
-    try {
-        localStorage.setItem('bingoWildcard', JSON.stringify({
-            digit: digit,
-            timestamp: Date.now()
-        }));
-    } catch(e) {}
-
-    // Modern banner design
     const banner = document.createElement('div');
-    banner.innerHTML = `
-        <div style="font-size:clamp(10px,1.2vw,16px);letter-spacing:4px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Wildcard Activated</div>
-        <div style="font-size:clamp(28px,4vw,56px);font-weight:900;letter-spacing:2px;">All <span style="color:#FFD700;">${digit}s</span> are Wild!</div>
-        <div style="font-size:clamp(10px,1.1vw,15px);opacity:0.7;margin-top:8px;letter-spacing:1px;">Mark off every number ending in ${digit}</div>
-    `;
+    banner.textContent = `Wildcard Activated: 3 ${digit}'s in a row. mark off all remaining ${digit}'s!`;
     banner.className = 'wildcard-banner';
     document.body.appendChild(banner);
 
-    setTimeout(() => {
-        banner.style.opacity = '0';
-        banner.style.transform = 'translateX(-50%) translateY(-20px)';
-        setTimeout(() => banner.remove(), 500);
-    }, 15000);
+    setTimeout(() => banner.remove(), 15000);
 
     const spray = document.createElement('div');
     spray.className = 'graffiti-spray';
@@ -195,31 +195,28 @@ function resetBoard() {
 function updateLastNumber() {
     const ballImage    = document.getElementById('lastBallImage');
     const ballFallback = document.getElementById('lastBallFallback');
-
-    // Always clear handlers and reset both elements first
-    ballImage.onload  = null;
-    ballImage.onerror = null;
-    ballImage.src     = '';
-    ballImage.style.display    = 'none';
-    ballFallback.textContent   = '';
-    ballFallback.style.display = 'none';
-
     const last = calledNumbers[calledNumbers.length - 1];
     if (last) {
         const name = last.column + last.number;
+        ballImage.src = `images/balls/${name}.png`;
         ballImage.alt = name;
-        ballImage.onload = () => {
-            ballImage.style.display = 'block';
-            ballFallback.style.display = 'none';
-        };
+        ballImage.style.display = 'block';
+        ballFallback.style.display = 'none';
         ballImage.onerror = () => {
             ballImage.style.display = 'none';
             ballFallback.textContent = name;
             ballFallback.style.display = 'block';
         };
-        ballImage.src = `images/balls/${name}.png`;
+        ballImage.onload = () => {
+            ballImage.style.display = 'block';
+            ballFallback.style.display = 'none';
+        };
+    } else {
+        ballImage.src = '';
+        ballImage.style.display = 'none';
+        ballFallback.textContent = '';
+        ballFallback.style.display = 'none';
     }
-
     updateBallHistory();
 }
 
@@ -243,21 +240,29 @@ function updateBallCounter() {
         if (counterDiv) counterDiv.textContent = `Balls Called: ${count}`;
     } catch(e) {}
 
-    // Always sync state to localStorage for display page
+    const state = {
+        calledNumbers: calledNumbers.map(n => ({ column: n.column, number: n.number })),
+        lastCalled: calledNumbers.length > 0
+            ? { column: calledNumbers[calledNumbers.length - 1].column, number: calledNumbers[calledNumbers.length - 1].number }
+            : null,
+        pattern: document.getElementById('patterns')
+            ? document.getElementById('patterns').value
+            : '',
+        timestamp: Date.now()
+    };
+
+    // Sync to localStorage for display screen
     try {
-        const state = {
-            calledNumbers: calledNumbers.map(n => ({ column: n.column, number: n.number })),
-            lastCalled: calledNumbers.length > 0
-                ? { column: calledNumbers[calledNumbers.length - 1].column, number: calledNumbers[calledNumbers.length - 1].number }
-                : null,
-            pattern: document.getElementById('patterns')
-                ? document.getElementById('patterns').value
-                : '',
-            timestamp: Date.now()
-        };
         localStorage.setItem('bingoState', JSON.stringify(state));
     } catch(e) {
-        console.error('State sync failed:', e);
+        console.error('localStorage sync failed:', e);
+    }
+
+    // Sync to Firebase for player cards
+    try {
+        set(ref(db, 'bingoState'), state);
+    } catch(e) {
+        console.error('Firebase sync failed:', e);
     }
 }
 

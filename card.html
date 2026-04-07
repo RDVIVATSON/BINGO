@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BINGO Card</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #0d0d1a;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .card-wrap {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* Header logo */
+    .card-logo {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    #cardLogoImg {
+      max-height: 60px;
+      max-width: 80%;
+      object-fit: contain;
+    }
+
+    #cardLogoSvg {
+      width: min(260px, 70vw);
+    }
+
+    /* Bingo card grid */
+    .bingo-card {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #1e1e3a;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+
+    .card-header {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+    }
+
+    .card-header-cell {
+      padding: 10px 4px;
+      text-align: center;
+      font-size: clamp(20px, 6vw, 32px);
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+
+    .card-header-cell.col-B { background: #1565C0; }
+    .card-header-cell.col-I { background: #C62828; }
+    .card-header-cell.col-N { background: #555; }
+    .card-header-cell.col-G { background: #2E7D32; }
+    .card-header-cell.col-O { background: #E65100; }
+
+    .card-body {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 3px;
+      background: #1e1e3a;
+      padding: 3px;
+    }
+
+    .card-cell {
+      background: #12122a;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(14px, 4.5vw, 26px);
+      font-weight: bold;
+      border-radius: 6px;
+      transition: background 0.3s, transform 0.2s;
+      position: relative;
+      color: #ccc;
+    }
+
+    .card-cell.daubed {
+      background: #e94560;
+      color: #fff;
+      transform: scale(0.95);
+    }
+
+    .card-cell.daubed::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.3), transparent 60%);
+      pointer-events: none;
+    }
+
+    .card-cell.free-space {
+      background: #27ae60;
+      color: #fff;
+      font-size: clamp(8px, 2.5vw, 14px);
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    /* Status bar */
+    .card-status {
+      margin-top: 12px;
+      text-align: center;
+      font-size: clamp(11px, 3vw, 15px);
+      color: #666;
+      letter-spacing: 1px;
+    }
+
+    .card-status span {
+      color: #e94560;
+      font-weight: bold;
+    }
+
+    /* Last called banner */
+    .last-called-bar {
+      margin-top: 10px;
+      text-align: center;
+      font-size: clamp(13px, 3.5vw, 18px);
+      color: #888;
+      min-height: 28px;
+    }
+
+    .last-called-bar span {
+      color: #fff;
+      font-weight: 900;
+      font-size: clamp(18px, 5vw, 28px);
+    }
+
+    /* Waiting overlay */
+    #waitingScreen {
+      position: fixed;
+      inset: 0;
+      background: #0d0d1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+      text-align: center;
+      padding: 24px;
+    }
+
+    #waitingScreen svg { width: min(280px, 75vw); }
+
+    #waitingScreen p {
+      color: #555;
+      font-size: clamp(11px, 3vw, 16px);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* BINGO win overlay */
+    #winOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
+
+    #winOverlay.show { display: flex; }
+
+    #winOverlay h1 {
+      font-size: clamp(48px, 15vw, 96px);
+      font-weight: 900;
+      color: #e94560;
+      letter-spacing: 8px;
+      animation: popIn 0.4s ease;
+    }
+
+    #winOverlay p {
+      color: #aaa;
+      font-size: clamp(13px, 3vw, 18px);
+      letter-spacing: 2px;
+    }
+
+    #winOverlay button {
+      margin-top: 8px;
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 32px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    @keyframes popIn {
+      0%   { transform: scale(0.5); opacity: 0; }
+      80%  { transform: scale(1.1); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    @keyframes daub-pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.15); }
+      100% { transform: scale(0.95); }
+    }
+
+    .daub-animate {
+      animation: daub-pop 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Waiting screen shown before game starts -->
+<div id="waitingScreen">
+  <svg id="waitLogoSvg" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+    <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+    <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+  </svg>
+  <img id="waitLogoImg" src="" alt="" style="display:none; max-width:70vw; max-height:100px; object-fit:contain;">
+  <p>Waiting for game to start...</p>
+</div>
+
+<!-- Win overlay -->
+<div id="winOverlay">
+  <h1>BINGO!</h1>
+  <p>Show this screen to the caller</p>
+  <button onclick="document.getElementById('winOverlay').classList.remove('show')">Dismiss</button>
+</div>
+
+<!-- Player card -->
+<div class="card-wrap">
+  <div class="card-logo">
+    <svg id="cardLogoSvg" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+      <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+      <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+      <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+    </svg>
+    <img id="cardLogoImg" src="" alt="" style="display:none; max-height:60px; max-width:80%; object-fit:contain;">
+  </div>
+
+  <div class="bingo-card">
+    <div class="card-header">
+      <div class="card-header-cell col-B">B</div>
+      <div class="card-header-cell col-I">I</div>
+      <div class="card-header-cell col-N">N</div>
+      <div class="card-header-cell col-G">G</div>
+      <div class="card-header-cell col-O">O</div>
+    </div>
+    <div class="card-body" id="cardBody"></div>
+  </div>
+
+  <div class="last-called-bar" id="lastCalledBar">Waiting for first ball...</div>
+  <div class="card-status">Daubed: <span id="daubCount">0</span> numbers</div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDDG_V9d2hd7QxHaAuAVoQ2RsnjB3omB-M",
+  authDomain: "bingo-night-c2a1a.firebaseapp.com",
+  databaseURL: "https://bingo-night-c2a1a-default-rtdb.firebaseio.com",
+  projectId: "bingo-night-c2a1a",
+  storageBucket: "bingo-night-c2a1a.firebasestorage.app",
+  messagingSenderId: "118563477693",
+  appId: "1:118563477693:web:2fe869d3472f20da6a3fd4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── Generate random bingo card ──────────────────────────────────────────────
+const RANGES = { B:[1,15], I:[16,30], N:[31,45], G:[46,60], O:[61,75] };
+const COLS   = ['B','I','N','G','O'];
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function generateCard() {
+  const card = {};
+  COLS.forEach((col, ci) => {
+    const [lo, hi] = RANGES[col];
+    const pool = [];
+    for (let n = lo; n <= hi; n++) pool.push(n);
+    shuffle(pool);
+    card[col] = pool.slice(0, 5);
+    if (ci === 2) card[col][2] = 'FREE'; // N column center = free space
+  });
+  return card;
+}
+
+const card = generateCard();
+
+// ── Render card ─────────────────────────────────────────────────────────────
+const body = document.getElementById('cardBody');
+
+// card is column-major, grid is row-major — transpose
+for (let row = 0; row < 5; row++) {
+  COLS.forEach(col => {
+    const val = card[col][row];
+    const cell = document.createElement('div');
+    cell.className = 'card-cell' + (val === 'FREE' ? ' free-space daubed' : '');
+    cell.textContent = val === 'FREE' ? 'FREE' : val;
+    if (val !== 'FREE') {
+      cell.dataset.col = col;
+      cell.dataset.num = val;
+    }
+    body.appendChild(cell);
+  });
+}
+
+// ── Win detection ───────────────────────────────────────────────────────────
+function checkWin() {
+  const cells = [...document.querySelectorAll('.card-cell')];
+  const grid  = [];
+  for (let r = 0; r < 5; r++) grid.push(cells.slice(r * 5, r * 5 + 5));
+
+  const daubed = r => c => grid[r][c].classList.contains('daubed');
+
+  // Rows
+  for (let r = 0; r < 5; r++)
+    if ([0,1,2,3,4].every(daubed(r))) return true;
+  // Cols
+  for (let c = 0; c < 5; c++)
+    if ([0,1,2,3,4].every(r => grid[r][c].classList.contains('daubed'))) return true;
+  // Diagonals
+  if ([0,1,2,3,4].every(i => grid[i][i].classList.contains('daubed'))) return true;
+  if ([0,1,2,3,4].every(i => grid[i][4-i].classList.contains('daubed'))) return true;
+
+  return false;
+}
+
+let winShown = false;
+let lastTimestamp = null;
+
+// ── Firebase listener ───────────────────────────────────────────────────────
+onValue(ref(db, 'bingoState'), snapshot => {
+  const state = snapshot.val();
+
+  if (!state || !state.calledNumbers || state.calledNumbers.length === 0) {
+    document.getElementById('waitingScreen').style.display = 'flex';
+    document.getElementById('lastCalledBar').textContent = 'Waiting for first ball...';
+    document.getElementById('daubCount').textContent = '0';
+    // Reset daubed state except free space
+    document.querySelectorAll('.card-cell:not(.free-space)').forEach(c => c.classList.remove('daubed', 'daub-animate'));
+    winShown = false;
+    lastTimestamp = null;
+    return;
+  }
+
+  document.getElementById('waitingScreen').style.display = 'none';
+
+  // Reset on new game (timestamp reset means fresh game)
+  if (lastTimestamp !== null && state.timestamp < lastTimestamp) {
+    document.querySelectorAll('.card-cell:not(.free-space)').forEach(c => c.classList.remove('daubed', 'daub-animate'));
+    winShown = false;
+  }
+  lastTimestamp = state.timestamp;
+
+  // Daub all called numbers
+  state.calledNumbers.forEach(({ column, number }) => {
+    const cell = document.querySelector(`.card-cell[data-col="${column}"][data-num="${number}"]`);
+    if (cell && !cell.classList.contains('daubed')) {
+      cell.classList.add('daubed', 'daub-animate');
+      setTimeout(() => cell.classList.remove('daub-animate'), 300);
+    }
+  });
+
+  // Update last called
+  if (state.lastCalled) {
+    const { column, number } = state.lastCalled;
+    document.getElementById('lastCalledBar').innerHTML =
+      `Last called: <span>${column}${number}</span>`;
+  }
+
+  // Update daub count
+  const daubCount = document.querySelectorAll('.card-cell.daubed').length;
+  document.getElementById('daubCount').textContent = daubCount;
+
+  // Check win
+  if (!winShown && checkWin()) {
+    winShown = true;
+    setTimeout(() => document.getElementById('winOverlay').classList.add('show'), 400);
+  }
+});
+
+// ── Apply venue logo from localStorage ─────────────────────────────────────
+try {
+  const cfg = JSON.parse(localStorage.getItem('bingoConfig') || '{}');
+  if (cfg.logo) {
+    document.getElementById('cardLogoImg').src = cfg.logo;
+    document.getElementById('cardLogoImg').style.display = 'block';
+    document.getElementById('cardLogoSvg').style.display = 'none';
+    document.getElementById('waitLogoImg').src = cfg.logo;
+    document.getElementById('waitLogoImg').style.display = 'block';
+    document.getElementById('waitLogoSvg').style.display = 'none';
+  }
+} catch {}
+</script>
+</body>
+</html>

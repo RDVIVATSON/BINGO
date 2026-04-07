@@ -242,8 +242,12 @@
 </div>
 -->
 
-<<div class="static-section">
-  <img id="venueLogo" class="beer-image" src="" alt="BINGO NIGHT">
+<div class="static-section">
+  <svg class="beer-image" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+    <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
+    <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
+    <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
+  </svg>
 </div>
 
 
@@ -261,141 +265,83 @@
 <div class="bottom-controls">
   <div id="ballCounter">Balls Called: 0</div>
   <button class="reset" onclick="resetBoard()">Reset Board</button>
-  <button class="config-link" onclick="showHelp()" title="How to Use" style="background:none;border:none;cursor:pointer;font-size:clamp(14px,1.4vw,20px);opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">❓</button>
   <a href="display.html" target="_blank" class="config-link" title="TV Display">📺</a>
   <a href="config.html" class="config-link" title="Settings">⚙️</a>
+  <button class="config-link" id="qrBtn" title="Player QR Code" style="background:none;border:none;cursor:pointer;font-size:clamp(14px,1.4vw,20px);opacity:0.6;transition:opacity 0.2s;padding:0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📱</button>
 </div>
 
     </div>
-<!-- Help / Intro Overlay -->
-<div id="helpOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:10000; overflow-y:auto;">
-  <div style="max-width:600px; margin:40px auto; background:#16213e; border-radius:16px; border:1px solid #e94560; padding:32px; color:#eee; font-family:Arial,sans-serif; position:relative;">
-    <button onclick="closeHelp()" style="position:absolute; top:14px; right:16px; background:none; border:none; color:#aaa; font-size:22px; cursor:pointer; line-height:1;">&#x2715;</button>
+    <script type="module" src="script.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+	<script>
+	// Apply saved config on load
+	(function applyConfig() {
+	  let cfg = {};
+	  try { cfg = JSON.parse(localStorage.getItem('bingoConfig')) || {}; } catch {}
 
-    <div style="text-align:center; margin-bottom:24px;">
-      <div style="font-size:2.2rem; font-weight:900; color:#e94560; letter-spacing:4px;">BINGO</div>
-      <div style="font-size:1rem; color:#aaa; letter-spacing:6px;">NIGHT</div>
-      <div style="margin-top:8px; font-size:0.85rem; color:#666;">Caller App Guide</div>
-    </div>
+	  // Logo
+	  const logoEl = document.querySelector('.static-section img');
+	  if (logoEl) {
+	    if (cfg.showlogo === false) {
+	      logoEl.style.display = 'none';
+	    } else if (cfg.logo) {
+	      logoEl.src = cfg.logo;
+	    }
+	  }
 
-    <div style="margin-bottom:20px;">
-      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Getting Started</div>
-      <p style="font-size:0.9rem; line-height:1.6; color:#ccc;">Select a Bingo pattern from the dropdown on the right side. The pattern image will update to show players what they need to mark. When ready, start calling balls by clicking the numbered buttons on the board.</p>
-    </div>
+	  // Wildcard toggle default
+	  const wcToggle = document.getElementById('enableWildcard');
+	  if (wcToggle && cfg.wildcard !== undefined) wcToggle.checked = cfg.wildcard;
 
-    <div style="margin-bottom:20px;">
-      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Calling Numbers</div>
-      <ul style="font-size:0.9rem; line-height:1.8; color:#ccc; padding-left:18px;">
-        <li>Click any number button to mark it as called. It will flash and turn red.</li>
-        <li>The last called ball appears in the sidebar with its ball image.</li>
-        <li>Call history tracks all called numbers in order, most recent first.</li>
-        <li>Click a called number again to un-call it.</li>
-      </ul>
-    </div>
+	  // Ball counter visibility
+	  const counter = document.getElementById('ballCounter');
+	  if (counter && cfg.counter === false) counter.style.display = 'none';
 
-    <div style="margin-bottom:20px;">
-      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Wildcard Feature</div>
-      <p style="font-size:0.9rem; line-height:1.6; color:#ccc;">When enabled, if 3 consecutive called numbers share the same last digit (e.g. B5, I25, O65), a Wildcard is triggered. All remaining numbers with that digit are automatically marked, and a banner announces it to the room.</p>
-    </div>
+	  // Last ball visibility
+	  const lastBall = document.querySelector('.last-number');
+	  if (lastBall && cfg.lastball === false) lastBall.style.display = 'none';
 
-    <div style="margin-bottom:20px;">
-      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Controls</div>
-      <ul style="font-size:0.9rem; line-height:1.8; color:#ccc; padding-left:18px;">
-        <li><strong style="color:#fff;">Reset Board</strong> - Clears all called numbers and starts fresh.</li>
-        <li><strong style="color:#fff;">TV Display</strong> - Opens a second screen view for a projector or TV.</li>
-        <li><strong style="color:#fff;">Settings</strong> - Configure logo, patterns, and feature toggles.</li>
-        <li><strong style="color:#fff;">This button</strong> - Reopens this guide anytime.</li>
-      </ul>
-    </div>
-
-    <div style="margin-bottom:24px;">
-      <div style="color:#e94560; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:bold; border-bottom:1px solid #0f3460; padding-bottom:6px; margin-bottom:12px;">Pattern Selection</div>
-      <p style="font-size:0.9rem; line-height:1.6; color:#ccc;">Over 150 patterns are available. Use the Settings page to limit the dropdown to only the patterns you use regularly. The pattern image updates live as you switch selections.</p>
-    </div>
-
-    <button onclick="closeHelp()" style="display:block; width:100%; padding:12px; background:#e94560; color:#fff; border:none; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer; letter-spacing:1px;">Got It, Let's Play</button>
+	  // Pattern dropdown — filter to selected only
+	  if (cfg.patterns && cfg.patterns.length > 0) {
+	    const select = document.getElementById('patterns');
+	    if (select) {
+	      [...select.options].forEach(opt => {
+	        if (!cfg.patterns.includes(opt.value)) opt.remove();
+	      });
+	    }
+	  }
+	})();
+	</script>
+<!-- QR Code Modal -->
+<div id="qrModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#1a1a2e; border-radius:16px; padding:32px; text-align:center; max-width:320px; width:90%;">
+    <p style="color:#aaa; font-size:13px; letter-spacing:2px; text-transform:uppercase; margin-bottom:16px;">Player Card</p>
+    <div id="qrCodeContainer" style="background:white; padding:12px; border-radius:8px; display:inline-block; margin-bottom:16px;"></div>
+    <p style="color:#888; font-size:12px; margin-bottom:20px;">Scan to get a bingo card</p>
+    <button onclick="document.getElementById('qrModal').style.display='none'" style="background:#e94560; color:white; border:none; border-radius:8px; padding:10px 24px; cursor:pointer; font-size:14px; font-weight:bold;">Close</button>
   </div>
 </div>
 
-<script>
-  function showHelp() {
-    document.getElementById('helpOverlay').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-  }
+<script type="module">
+  import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm';
 
-  function closeHelp() {
-    document.getElementById('helpOverlay').style.display = 'none';
-    document.body.style.overflow = '';
-    // Set cookie for 365 days
-    const expires = new Date();
-    expires.setFullYear(expires.getFullYear() + 1);
-    document.cookie = 'bingo_visited=true; expires=' + expires.toUTCString() + '; path=/';
-  }
+  const cardURL = window.location.origin + window.location.pathname.replace('index.html', '') + 'card.html';
 
-  function getCookie(name) {
-    return document.cookie.split('; ').find(r => r.startsWith(name + '=')) || null;
-  }
+  document.getElementById('qrBtn').addEventListener('click', () => {
+    const modal = document.getElementById('qrModal');
+    const container = document.getElementById('qrCodeContainer');
+    container.innerHTML = '';
+    modal.style.display = 'flex';
+    QRCode.toCanvas(document.createElement('canvas'), cardURL, { width: 220, margin: 1 }, (err, canvas) => {
+      if (!err) container.appendChild(canvas);
+    });
+  });
 
-  // Show on first visit only
-  window.addEventListener('load', function() {
-    if (!getCookie('bingo_visited')) {
-      showHelp();
-    }
+  // Close modal on backdrop click
+  document.getElementById('qrModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
   });
 </script>
 
-    <script src="script.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-	<script>
-(function applyConfig() {
-  let cfg = {};
-  try { cfg = JSON.parse(localStorage.getItem('bingoConfig')) || {}; } catch {}
-
-  // Logo
-  const logoEl = document.getElementById('venueLogo');
-  if (logoEl) {
-    if (cfg.showlogo === false) {
-      logoEl.closest('.static-section').style.display = 'none';
-    } else if (cfg.logo) {
-      logoEl.src = cfg.logo;
-    } else {
-      const svg = `<svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
-        <rect width="300" height="120" rx="14" fill="#1a1a2e"/>
-        <text x="150" y="52" font-family="Arial Black, Arial" font-weight="900" font-size="38" fill="#e94560" text-anchor="middle" letter-spacing="4">BINGO</text>
-        <text x="150" y="90" font-family="Arial, sans-serif" font-size="18" fill="#aaa" text-anchor="middle" letter-spacing="6">NIGHT</text>
-      </svg>`;
-      logoEl.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    }
-  }
-
-  // Wildcard — hide the entire toggle if disabled
-  const wcToggle = document.getElementById('enableWildcard');
-  const wcWrap = document.querySelector('.wildcard-toggle');
-  if (cfg.wildcard === false) {
-    if (wcWrap) wcWrap.style.display = 'none';
-    if (wcToggle) wcToggle.checked = false;
-  } else {
-    if (wcToggle) wcToggle.checked = true;
-  }
-
-  // Ball counter
-  const counter = document.getElementById('ballCounter');
-  if (counter && cfg.counter === false) counter.style.display = 'none';
-
-  // Last ball display
-  const lastBall = document.querySelector('.last-number');
-  if (lastBall && cfg.lastball === false) lastBall.style.display = 'none';
-
-  // Pattern dropdown — filter to selected only
-  if (cfg.patterns && cfg.patterns.length > 0) {
-    const select = document.getElementById('patterns');
-    if (select) {
-      [...select.options].forEach(opt => {
-        if (!cfg.patterns.includes(opt.value)) opt.remove();
-      });
-    }
-  }
-})();
-</script>
 </body>
 </html>
